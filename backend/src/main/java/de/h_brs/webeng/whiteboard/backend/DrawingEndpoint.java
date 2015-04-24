@@ -31,8 +31,8 @@ public class DrawingEndpoint {
 
 	@OnOpen
 	public void onOpen(Session session, @PathParam("id") String whiteboardId) {
-		LOG.info("Connected session " + session.getId() + " to whiteboard " + whiteboardId);
-		// TODO: is session.getUserPrincipal allowed to draw on this whiteboard?
+		LOG.info("Connected session " + session.getId() + " for user " + session.getUserPrincipal().getName() + " to whiteboard " + whiteboardId);
+		// TODO: is session.getUserPrincipal() authorized to draw on this whiteboard?
 		// TODO: add session.getAsyncRemote() to actor responsible for sending responses.
 	}
 
