@@ -7,10 +7,12 @@ import javax.xml.bind.annotation.XmlEnum;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 @Getter
 @Setter
 @EqualsAndHashCode
+@ToString
 public class DrawEvent {
 	
 	private UUID uuid;

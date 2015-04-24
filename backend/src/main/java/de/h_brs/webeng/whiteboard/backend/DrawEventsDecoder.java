@@ -2,6 +2,8 @@ package de.h_brs.webeng.whiteboard.backend;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.util.Collection;
+import java.util.List;
 
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
@@ -11,7 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import de.h_brs.webeng.whiteboard.backend.domain.DrawEvent;
 
-public final class DrawEventDecoder implements Decoder.TextStream<DrawEvent> {
+public final class DrawEventsDecoder implements Decoder.TextStream<Collection<DrawEvent>> {
 	
 	private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -26,8 +28,8 @@ public final class DrawEventDecoder implements Decoder.TextStream<DrawEvent> {
 	}
 
 	@Override
-	public DrawEvent decode(Reader reader) throws DecodeException, IOException {
-		return objectMapper.readValue(reader, DrawEvent.class);
+	public List<DrawEvent> decode(Reader reader) throws DecodeException, IOException {
+		return objectMapper.readValue(reader, objectMapper.getTypeFactory().constructCollectionType(List.class, DrawEvent.class));
 	}
 	
 }
