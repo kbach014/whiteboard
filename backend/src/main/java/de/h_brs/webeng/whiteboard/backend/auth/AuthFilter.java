@@ -12,7 +12,7 @@ import javax.servlet.annotation.WebFilter;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-@WebFilter(filterName = "authFilter", urlPatterns = {"/drawings/*"})
+@WebFilter(filterName = "authFilter", urlPatterns = {"/drawings/*", "/rest/*"})
 public final class AuthFilter implements Filter{
 	
 	@Override
