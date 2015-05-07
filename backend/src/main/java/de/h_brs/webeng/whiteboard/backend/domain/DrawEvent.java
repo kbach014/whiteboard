@@ -15,17 +15,27 @@ import lombok.ToString;
 @ToString
 public class DrawEvent {
 	
-	private UUID uuid;
-	private Type type;
+	private UUID shapeUuid;
+	private UUID eventUuid;
+	private Shape shape;
+	private EventType type;
 	private String coords;
 	private String path;
 	private String text;
 	
 	@XmlEnum(String.class)
-	public enum Type {
+	public enum Shape {
 		RECT,
 		PATH,
 		TEXT;
+	}
+	
+	@XmlEnum(String.class)
+	public enum EventType {
+		START,
+		UPDATE,
+		FINISH,
+		CANCEL;
 	}
 
 }

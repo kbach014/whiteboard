@@ -28,8 +28,10 @@ angular.module('whiteboard').controller('WhiteboardCtrl', ['$scope', '$routePara
 
 	$scope.draw = function() {
 		whiteboardService.scheduleDrawEvent({
-			uuid: '8218c5e7-a950-4ebb-bb3d-7d4987e8c51c',
-			type: 'RECT',
+			shapeUuid: '8218c5e7-a950-4ebb-bb3d-7d4987e8c51c',
+			eventUuid: '8218c5e7-a950-4ebb-bb3d-7d4987e8c51d',
+			shape: 'RECT',
+			type: 'START',
 			coords: '0, 0, 10, 10'
 		});
 	};
