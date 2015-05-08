@@ -24,40 +24,33 @@ import scala.concurrent.duration.Duration;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
-import de.h_brs.webeng.whiteboard.backend.actors.WhiteboardEventDispatcher;
+import de.h_brs.webeng.whiteboard.backend.actors.Message;
+import de.h_brs.webeng.whiteboard.backend.actors.RemoteEndpointSender;
+import de.h_brs.webeng.whiteboard.backend.actors.WhiteboardHandler;
 import de.h_brs.webeng.whiteboard.backend.domain.DrawEvent;
 
-@ServerEndpoint(value = "/drawings/{id}", decoders = { DrawEventsDecoder.class })
+@ServerEndpoint(value = "/drawings/{id}", decoders = { DrawEventsDecoder.class }, encoders = {FinishedShapeEncoder.class})
 public class DrawingEndpoint {
 
 	private static final Logger LOG = LoggerFactory.getLogger(DrawingEndpoint.class);
 
 	private final ActorSystem system = ActorSystem.create("DrawingSystem");
-	private final ConcurrentMap<Long, ActorRef> workers = new ConcurrentHashMap<>();
+	private final ConcurrentMap<Long, ActorRef> whiteboardHandlers = new ConcurrentHashMap<>();
 
 	@OnOpen
 	public void onOpen(Session session, @PathParam("id") Long whiteboardId) {
 		LOG.info("Connected session " + session.getId() + " for user " + session.getUserPrincipal().getName() + " to whiteboard " + whiteboardId);
 		// TODO: is session.getUserPrincipal() authorized to draw on this whiteboard?
-		// TODO: add session.getAsyncRemote() to actor responsible for sending responses.
+		
+		final ActorRef ref = system.actorOf(Props.create(RemoteEndpointSender.class, session.getAsyncRemote()), session.getId());
+		getHandlerForWhiteboard(whiteboardId).tell(Message.HELLO_WHITEBOARD, ref);
+		session.getUserProperties().put("sender", ref);
 	}
 
 	@OnMessage
 	public void processDrawEvent(Collection<DrawEvent> events, Session session, @PathParam("id") Long whiteboardId) throws IOException {
-		// TODO: use router to decide, which whiteboard to use
-		final ActorRef ref = getOrCreateWorkerForShape(whiteboardId);
-		events.forEach(event -> ref.tell(event, ActorRef.noSender()));
-	}
-	
-	// TODO: use Props.create(...).withRouter to decide, which whiteboard to use instead of "workers" Map.
-	private ActorRef getOrCreateWorkerForShape(Long whiteboardId) {
-		if (workers.containsKey(whiteboardId)) {
-			return workers.get(whiteboardId);
-		} else {
-			final ActorRef ref = system.actorOf(Props.create(WhiteboardEventDispatcher.class, whiteboardId));
-			workers.putIfAbsent(whiteboardId, ref);
-			return ref;
-		}
+		final ActorRef handler = getHandlerForWhiteboard(whiteboardId);
+		events.forEach(event -> handler.tell(event, ActorRef.noSender()));
 	}
 
 	@OnError
@@ -72,8 +65,11 @@ public class DrawingEndpoint {
     }
 
 	@OnClose
-	public void onClose(Session session, CloseReason closeReason) {
-		// TODO: remove asyncRemote from actor
+	public void onClose(Session session, CloseReason closeReason, @PathParam("id") Long whiteboardId) {
+		final ActorRef ref = (ActorRef) session.getUserProperties().remove("sender");
+		if (ref != null) {
+			getHandlerForWhiteboard(whiteboardId).tell(Message.GOODBYE_WHITEBOARD, ref);
+		}
 		LOG.info(String.format("Session %s closed because of %s", session.getId(), closeReason));
 	}
 
@@ -82,5 +78,25 @@ public class DrawingEndpoint {
 		system.shutdown();
 		system.awaitTermination(Duration.create(15, TimeUnit.SECONDS));
 	}
+	
+	/**
+	 * Atomically gets the actor in charge of handling messages for a given whiteboard.
+	 * @param whiteboardId Which whiteboard
+	 * @return Non-null actor (creates new actor, if not yet existing).
+	 */
+	private ActorRef getHandlerForWhiteboard(Long whiteboardId) {
+		whiteboardHandlers.computeIfAbsent(whiteboardId, this::createWhiteboardHandler);
+		return whiteboardHandlers.get(whiteboardId);
+	}
+	
+	/**
+	 * Guaranteed to be called only once per whiteboardId (see {@link ConcurrentHashMap#computeIfAbsent(Object, java.util.function.Function)}).
+	 * @param whiteboardId For which whiteboard to create an adapter
+	 * @return new adapter for the given whiteboardId
+	 */
+	private ActorRef createWhiteboardHandler(Long whiteboardId) {
+		return system.actorOf(Props.create(WhiteboardHandler.class, whiteboardId), String.valueOf(whiteboardId));
+	}
+	
 
 }

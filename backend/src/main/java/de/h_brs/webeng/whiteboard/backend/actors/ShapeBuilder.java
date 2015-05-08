@@ -5,8 +5,9 @@ import org.slf4j.LoggerFactory;
 
 import akka.actor.UntypedActor;
 import de.h_brs.webeng.whiteboard.backend.domain.DrawEvent;
+import de.h_brs.webeng.whiteboard.backend.domain.FinishedShape;
 
-public class ShapeBuilder extends UntypedActor {
+class ShapeBuilder extends UntypedActor {
 	
 	private static final Logger LOG = LoggerFactory.getLogger(ShapeBuilder.class);
 	
@@ -23,6 +24,7 @@ public class ShapeBuilder extends UntypedActor {
 			switch (event.getType()) {
 			case START:
 				LOG.info("started drawing on whiteboard {}: {}", whiteboardId, event.getShape().name());
+				getSender().tell(new FinishedShape(), getSelf());
 				break;
 			case UPDATE:
 				LOG.info("updated drawing on whiteboard {}: {}", whiteboardId, event.getShape().name());
@@ -30,7 +32,7 @@ public class ShapeBuilder extends UntypedActor {
 			case FINISH:
 				LOG.info("finished drawing on whiteboard {}: {}", whiteboardId, event.getShape().name());
 				// TODO calculate final Shape and pass it to persisting actor
-				//getSender().tell("result", getSelf());
+				getSender().tell(new FinishedShape(), getSelf());
 				break;
 			case CANCEL:
 				LOG.info("canceled drawing on whiteboard {}: {}", whiteboardId, event.getShape().name());

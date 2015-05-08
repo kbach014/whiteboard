@@ -3,8 +3,6 @@ package de.h_brs.webeng.whiteboard.backend.domain;
 import java.io.Serializable;
 import java.util.UUID;
 
-import javax.xml.bind.annotation.XmlEnum;
-
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -14,24 +12,14 @@ import lombok.ToString;
 @Setter
 @EqualsAndHashCode
 @ToString
-public class DrawEvent implements Serializable {
+public class FinishedShape implements Serializable {
 	
-	private static final long serialVersionUID = 5048139899638762015L;
+	private static final long serialVersionUID = 9113616904249499836L;
 	
 	private UUID shapeUuid;
-	private UUID eventUuid;
-	private EventType type;
 	private ShapeType shape;
 	private String coords;
 	private String path;
 	private String text;
-	
-	@XmlEnum(String.class)
-	public enum EventType {
-		START,
-		UPDATE,
-		FINISH,
-		CANCEL;
-	}
 
 }
