@@ -20,7 +20,9 @@ public class DrawEvent implements Serializable {
 	
 	private UUID shapeUuid;
 	private UUID eventUuid;
+	// Which Type of Event? (start drawing, update, finish, cancel)
 	private EventType type;
+	// Which shape is drawn? (rect, path, text...)
 	private ShapeType shape;
 	private String coords;
 	private String path;
