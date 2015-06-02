@@ -9,10 +9,19 @@ angular.module('whiteboard').controller('WhiteboardCtrl', ['$scope', '$routePara
 		});
 	}
 
+	$scope.shapes = [];
+
 	$scope.shapetype = 'LINE';
 
 	$scope.updateShape = function(shape) {
-		console.log('foo', JSON.stringify(shape));
+		var existingShape = _.findWhere($scope.shapes, {'uuid': shape.uuid});
+		if (existingShape) {
+			// udpate
+			_.assign(existingShape, shape);
+		} else {
+			// add
+			$scope.shapes.push(shape);
+		}
 	};
 
 	$scope.draw = function() {

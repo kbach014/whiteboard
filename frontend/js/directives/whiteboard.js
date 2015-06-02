@@ -1,61 +1,103 @@
 /**
- * <canvas whiteboard-event-callback="updateShape(shape)" whiteboard-track-interval="100" whiteboard-shapes="myShapes" whiteboard-shape-type="'line'|'rect'|'text'"/>
+ * <canvas whiteboard-event-callback="updateShape(shape)" whiteboard-event-fps="10" whiteboard-render-fps="30" whiteboard-shapes="myShapes" whiteboard-shape-type="'LINE'|'RECT'|'TEXT'"/>
  */
 angular.module('whiteboard').directive('whiteboardShapes', ['$interval', function($interval) {
   'use strict';
+
+  var generateUUID = function() {
+    // taken from http://guid.us/GUID/JavaScript
+    function S4() {
+      return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
+    }
+    return (S4() + S4() + "-" + S4() + "-4" + S4().substr(0,3) + "-" + S4() + "-" + S4() + S4() + S4()).toLowerCase();
+  };
+
   return {
     restrict: 'A',
     scope: {
       callback: '&whiteboardEventCallback',
-      interval: '=whiteboardTrackInterval',
+      eventFps: '=whiteboardEventFps',
+      renderFps: '=whiteboardRenderFps',
       shapes: '=whiteboardShapes',
       shapeType: '=whiteboardShapeType'
     },
     link: function ($scope, $element, $attrs) {
-      var shape = null;
-      var ctx = $element[0].getContext('2d');
+      var transientShape = null;
+      var canvas = $element[0];
+      var ctx = canvas.getContext('2d');
 
-      var updateShape = function() {
-        if (shape !== null) {
-          $scope.callback({shape: shape});
+      var drawShape = function(shape) {
+        if (!shape || !shape.shape) {
+          return;
+        }
+        switch(shape.shape) {
+          case 'LINE':
+            if (shape.points && shape.points.length > 1) {
+              var firstPoint = _.first(shape.points);
+              var remainingPoints = _.rest(shape.points);
+              ctx.beginPath();
+              ctx.moveTo(firstPoint.x, firstPoint.y);
+              _.forEach(remainingPoints, function(point) {
+                ctx.lineTo(point.x, point.y);
+              });
+              ctx.stroke();
+            }
+            return;
+          case 'RECT':
+            if (shape.p1 && shape.p2 && !_.isEqual(shape.p1, shape.p2)) {
+              ctx.fillRect(Math.min(shape.p1.x, shape.p2.x), Math.min(shape.p1.y, shape.p2.y), Math.abs(shape.p1.x - shape.p2.x), Math.abs(shape.p1.y - shape.p2.y));
+            }
+            return;
+          case 'TEXT':
+            return;
+          default:
+            console.warn('Unsupported shape ', shape.shape);
+        }
+      };
+
+      var draw = function() {
+        ctx.clearRect (0, 0, canvas.width, canvas.height );
+        var uniqueShapes = _.uniq($scope.shapes, false, 'uuid');
+        _.forEach(uniqueShapes, function(shape) {
+          drawShape(shape);
+        });
+        drawShape(transientShape);
+      };
+
+      var sendTransientShapeEvents = function() {
+        if (transientShape !== null) {
+          $scope.callback({shape: transientShape});
         }
       };
 
       $element.on('mousedown', function(e) {
         switch($scope.shapeType) {
           case 'LINE':
-            shape = {shape: 'LINE', points: [{x: e.offsetX, y: e.offsetY}]};
-            ctx.beginPath();
-            ctx.moveTo(e.offsetX, e.offsetY);
+            transientShape = {shape: 'LINE', uuid: generateUUID(), points: [{x: e.offsetX, y: e.offsetY}]};
             break;
           case 'RECT':
-            ctx.save();
-            shape = {shape: 'RECT', p1: {x: e.offsetX, y: e.offsetY}};
+            transientShape = {shape: 'RECT', uuid: generateUUID(), p1: {x: e.offsetX, y: e.offsetY}, p2: {x: e.offsetX, y: e.offsetY}};
             break;
           case 'TEXT':
-            shape = {shape: 'TEXT', p1: {x: e.offsetX, y: e.offsetY}};
+            transientShape = {shape: 'TEXT', uuid: generateUUID(), p1: {x: e.offsetX, y: e.offsetY}};
             break;
           default:
-            console.warn('Unsupported shape ', $scope.shape);
+            console.warn('Unsupported shape ', $scope.shapeType);
         }
       });
 
       $element.on('mousemove', function(e) {
-        if (shape === null) {
+        if (transientShape === null) {
           // noop
           return;
         }
         // intermediate update:
-        switch(shape.shape) {
+        switch(transientShape.shape) {
           case 'LINE':
-            shape.points.push({x: e.offsetX, y: e.offsetY});
-            ctx.lineTo(e.offsetX, e.offsetY);
-            ctx.stroke();
+            transientShape.points.push({x: e.offsetX, y: e.offsetY});
             break;
           case 'RECT':
-            shape.p2 = {x: e.offsetX, y: e.offsetY};
-            ctx.restore();
-            ctx.fillRect(Math.min(shape.p1.x, shape.p2.x), Math.min(shape.p1.y, shape.p2.y), Math.abs(shape.p1.x - shape.p2.x), Math.abs(shape.p1.y - shape.p2.y));
+            transientShape.p2 = {x: e.offsetX, y: e.offsetY};
             break;
           default:
             //no-op
@@ -63,40 +105,57 @@ angular.module('whiteboard').directive('whiteboardShapes', ['$interval', functio
       });
 
       $element.on('mouseup', function(e) {
-        if (shape === null) {
+        if (transientShape === null) {
           // noop
           return;
         }
         // final update:
-        switch(shape.shape) {
+        switch(transientShape.shape) {
           case 'LINE':
-            shape.points.push({x: e.offsetX, y: e.offsetY});
-            ctx.lineTo(e.offsetX, e.offsetY);
-            ctx.stroke();
+            transientShape.points.push({x: e.offsetX, y: e.offsetY});
             break;
           case 'RECT':
-            shape.p2 = {x: e.offsetX, y: e.offsetY};
+            transientShape.p2 = {x: e.offsetX, y: e.offsetY};
             break;
           default:
             //no-op
         }
         // callback and cleanup:
-        updateShape(shape);
-        shape = null;
+        sendTransientShapeEvents(transientShape);
+        transientShape = null;
       });
 
       $element.on('mouseout', function() {
-        if (shape !== null) {
-          // TODO: cancel
-          console.info('shape canceled');
-          shape = null;
+        if (transientShape === null) {
+          // noop
+          return;
         }
+        // final update:
+        switch(transientShape.shape) {
+          case 'LINE':
+            // line without points:
+            transientShape.points = [];
+            break;
+          case 'RECT':
+            // rect without dimensions:
+            transientShape.p2 = transientShape.p1;
+            break;
+          case 'TEXT':
+            // text without characters:
+            transientShape.text = '';
+            break;
+          default:
+            //no-op
+        }
+        transientShape = null;
       });
 
       // interval based updates:
-      var timer = $interval(updateShape, $scope.interval);
+      var renderTimer = $interval(draw, 1000/($scope.renderFps || 1));
+      var eventTimer = $interval(sendTransientShapeEvents, 1000/($scope.eventFps || 1));
       $element.on('$destroy', function() {
-        $interval.cancel(timer);
+        $interval.cancel(renderTimer);
+        $interval.cancel(eventTimer);
       });
     }
   };
