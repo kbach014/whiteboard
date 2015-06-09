@@ -18,8 +18,7 @@ public class UserService {
 	@GET
     @Produces(MediaType.APPLICATION_JSON)
 	public Collection<User> getAllUsers() {
-		User mockUser = new User();
-		mockUser.setName("test");
+		User mockUser = new User("test");
 		return Arrays.asList(mockUser);
 	}
 

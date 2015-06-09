@@ -2,30 +2,26 @@ package de.h_brs.webeng.whiteboard.backend.dao;
 
 import java.util.List;
 
-import de.h_brs.webeng.whiteboard.backend.domain.Shape;
+import de.h_brs.webeng.whiteboard.backend.dao.exception.*;
 import de.h_brs.webeng.whiteboard.backend.domain.User;
 import de.h_brs.webeng.whiteboard.backend.domain.Whiteboard;
 
 public interface WhiteboardDAO {
-	long insertWhiteboard(Whiteboard whiteboard);
+	Whiteboard insertWhiteboard(User creator) throws UserNotFoundException;
 
     boolean updateWhiteboard(Whiteboard whiteboard);
 
     boolean deleteWhiteboard(Whiteboard whiteboard);
 
-    Whiteboard findWhiteboardByID(long id);
+    Whiteboard findWhiteboardByID(long id) throws WhiteboardNotFoundException;
 
-    List<Whiteboard> findAllWhiteboards();
+    List<Whiteboard> findWhiteboards(int start, int count);
 
-    boolean addShapeToWB(Shape shape, Whiteboard whiteboard);
-
-    List<Shape> getAllShapesFromWB(Whiteboard whiteboard);
-
-    boolean removeShapeFromWB(Shape shape, Whiteboard whiteboard);
-
-    boolean addUserToWB(User user, Whiteboard whiteboard);
-
-    boolean removeUserFromWB(User user, Whiteboard whiteboard, String p3);
-
-    List<User> getAllUsersFromWB(Whiteboard whiteboard);
+	List<Whiteboard> findRegisteredWhiteboards(User user) throws UserNotFoundException;
+	
+	List<Whiteboard> findUnregisteredWhiteboards(User user, int start, int count) throws UserNotFoundException;
+    
+    boolean whiteboardExists(String wbid);
+    
+    boolean whiteboardExists(Whiteboard whiteboard);
 }

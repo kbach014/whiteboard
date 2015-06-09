@@ -20,6 +20,9 @@ public class User {
 
     private List<Whiteboard> registeredWhiteboards;
     
+    public User() {
+    	
+    }
     
     public User(String username) {
     	this.username = username;
@@ -35,5 +38,14 @@ public class User {
     	this(username, firstname, lastname);
     	this.password = password;
     }
-
+    
+    @Override
+    public String toString() {
+    	String userInfo = "Username:"+getUsername()+"\n"
+    					+ "Firstname:"+getFirstname()+"\n"
+    					+ "Lastname:"+getLastname()+"\n"
+    					+ "Passwort:"+getPassword()+"\n";
+    	
+		return userInfo;
+    }
 }

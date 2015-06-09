@@ -8,14 +8,14 @@ public class Path extends Shape {
 	
 	private List<Point> points;
 	
-	public Path(User artist) {
-		super(ShapeType.PATH, artist);
+	public Path(String username, String whiteboardID) {
+		super(ShapeType.PATH, username, whiteboardID);
 		// TODO Ist dies die richtige Datenstruktur?
 		points = new ArrayList<Point>();
 	}
 	
-	public Path(User artist, List<Point> points) {
-		this(artist);
+	public Path(String username, String whiteboardID, List<Point> points) {
+		this(username, whiteboardID);
 		this.points = points;
 	}
 }

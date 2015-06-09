@@ -1,13 +1,18 @@
 package de.h_brs.webeng.whiteboard.backend.dao;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
 import de.h_brs.webeng.whiteboard.backend.domain.Shape;
 import de.h_brs.webeng.whiteboard.backend.domain.Whiteboard;
+import de.h_brs.webeng.whiteboard.backend.dao.exception.*;
+import de.h_brs.webeng.whiteboard.backend.domain.*;
 
 public interface ShapeDAO {
-	boolean insertShape(Shape shape);
+	void insertRect(Rectangle rect) throws UserNotFoundException, WhiteboardNotFoundException, IllegalShapeException;
+	
+	void insertCircle(Circle cirlce) throws UserNotFoundException, WhiteboardNotFoundException, IllegalShapeException;
 
     boolean updateShape(Shape shape);
 
@@ -15,5 +20,6 @@ public interface ShapeDAO {
 
     Shape findShapeByUUID(UUID uuid);
 
-    List<Shape> findAllShapesFromWB(Whiteboard whiteboard);
+    HashMap<String, List<Shape>> findAllShapesFromWB(Whiteboard whiteboard) throws WhiteboardNotFoundException;
 }
+

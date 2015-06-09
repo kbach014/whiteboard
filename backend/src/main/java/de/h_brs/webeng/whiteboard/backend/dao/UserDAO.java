@@ -2,21 +2,26 @@ package de.h_brs.webeng.whiteboard.backend.dao;
 
 import java.util.List;
 
-import de.h_brs.webeng.whiteboard.backend.domain.User;
-import de.h_brs.webeng.whiteboard.backend.domain.Whiteboard;
+import de.h_brs.webeng.whiteboard.backend.dao.exception.*;
+import de.h_brs.webeng.whiteboard.backend.domain.*;
 
 public interface UserDAO {
-	boolean updateUser(User user);
+	boolean updateUser(User user) throws UserNotFoundException;
 
 	boolean deleteUser(User user);
 
-	User findUserByUsername(String username);
+	User findUserByUsername(String username) throws UserNotFoundException;
 
-	boolean register(User user);
+	void register(User user) throws UserAlreadyRegisteredException;
 
-	boolean login(User user);
+	User login(String username, String password) throws UserNotFoundException, PasswordIncorrectException;
 
-	List<Whiteboard> findRegisteredWhiteboards(User user);
-
-	boolean registerToWhiteboard(User user, Whiteboard whiteboard);
+	void registerToWhiteboard(User user, Whiteboard whiteboard) throws UserNotFoundException, WhiteboardNotFoundException, UserWhiteboardException;
+	
+    List<User> findAllUsersFromWB(Whiteboard whiteboard) throws WhiteboardNotFoundException;
+	
+	boolean userExists(String username);
+	
+	boolean userExists(User user);
 }
+

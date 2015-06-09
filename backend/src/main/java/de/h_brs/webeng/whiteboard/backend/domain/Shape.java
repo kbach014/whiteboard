@@ -16,14 +16,21 @@ public abstract class Shape implements Serializable  {
 	private static final long serialVersionUID = 9113616904249499836L;
 	
     private UUID uuid;
+    
+    private String shapeKey;
 
-    private User artist;
+    private String username;
 
     private ShapeType type;
     
-    public Shape(ShapeType type, User artist) {
+    private String wbID;
+    
+    
+    public Shape(ShapeType type, String username, String wbID) {
     	this.uuid = UUID.randomUUID();
+    	this.wbID = wbID;
+    	this.shapeKey = "whiteboard:"+wbID+":shape:"+uuid;
     	this.type = type;
-    	this.artist = artist;
+    	this.username = username;
     }
 }
