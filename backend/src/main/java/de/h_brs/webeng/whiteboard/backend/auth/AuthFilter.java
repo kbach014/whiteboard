@@ -53,13 +53,11 @@ public final class AuthFilter implements Filter{
 				chain.doFilter(new AuthenticatedRequest(request, username), response);
 			} 
 			else {
-				// TODO EXCEPTION HANDLING
-				throw new ServletException("USER NOT AUTHORIZED!");
+				response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
 			}
 		} 
 		else {
-			// TODO EXCEPTION HANDLING
-			throw new ServletException("USER NOT AUTHORIZED!");
+			response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
 		}
 	}
 
