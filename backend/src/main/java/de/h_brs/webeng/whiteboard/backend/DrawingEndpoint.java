@@ -24,12 +24,13 @@ import scala.concurrent.duration.Duration;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
-import de.h_brs.webeng.whiteboard.backend.actors.Message;
+import de.h_brs.webeng.whiteboard.backend.actors.GoodbyeMessage;
+import de.h_brs.webeng.whiteboard.backend.actors.HelloMessage;
 import de.h_brs.webeng.whiteboard.backend.actors.RemoteEndpointSender;
 import de.h_brs.webeng.whiteboard.backend.actors.WhiteboardHandler;
-import de.h_brs.webeng.whiteboard.backend.domain.DrawEvent;
+import de.h_brs.webeng.whiteboard.backend.dto.DrawEventDto;
 
-@ServerEndpoint(value = "/drawings/{id}", decoders = { DrawEventsDecoder.class }, encoders = {FinishedShapeEncoder.class})
+@ServerEndpoint(value = "/drawings/{id}", decoders = { DrawEventsDecoder.class }, encoders = { DrawEventsEncoder.class })
 public class DrawingEndpoint {
 
 	private static final Logger LOG = LoggerFactory.getLogger(DrawingEndpoint.class);
@@ -41,34 +42,37 @@ public class DrawingEndpoint {
 	public void onOpen(Session session, @PathParam("id") Long whiteboardId) {
 		LOG.info("Connected session " + session.getId() + " for user " + session.getUserPrincipal().getName() + " to whiteboard " + whiteboardId);
 		// TODO: is session.getUserPrincipal() authorized to draw on this whiteboard?
-		
+
 		final ActorRef ref = system.actorOf(Props.create(RemoteEndpointSender.class, session.getAsyncRemote()), session.getId());
-		getHandlerForWhiteboard(whiteboardId).tell(Message.HELLO_WHITEBOARD, ref);
+		getHandlerForWhiteboard(whiteboardId).tell(new HelloMessage(session.getId()), ref);
 		session.getUserProperties().put("sender", ref);
 	}
 
 	@OnMessage
-	public void processDrawEvent(Collection<DrawEvent> events, Session session, @PathParam("id") Long whiteboardId) throws IOException {
+	public void processDrawEvent(Collection<DrawEventDto> events, Session session, @PathParam("id") Long whiteboardId) throws IOException {
 		final ActorRef handler = getHandlerForWhiteboard(whiteboardId);
-		events.forEach(event -> handler.tell(event, ActorRef.noSender()));
+		events.forEach(event -> {
+			event.setSessionId(session.getId());
+			handler.tell(event, ActorRef.noSender());
+		});
 	}
 
 	@OnError
-    public void onError(Throwable t, Session session) {
-    	try {
-    		if (session.isOpen()) {
-    			session.close(new CloseReason(CloseCodes.UNEXPECTED_CONDITION , t.getMessage()));
-    		}
+	public void onError(Throwable t, Session session) {
+		try {
+			if (session.isOpen()) {
+				session.close(new CloseReason(CloseCodes.UNEXPECTED_CONDITION, t.getMessage()));
+			}
 		} catch (IOException e) {
 			LOG.error("Error during exception handling.", e);
 		}
-    }
+	}
 
 	@OnClose
 	public void onClose(Session session, CloseReason closeReason, @PathParam("id") Long whiteboardId) {
 		final ActorRef ref = (ActorRef) session.getUserProperties().remove("sender");
 		if (ref != null) {
-			getHandlerForWhiteboard(whiteboardId).tell(Message.GOODBYE_WHITEBOARD, ref);
+			getHandlerForWhiteboard(whiteboardId).tell(new GoodbyeMessage(session.getId()), ref);
 		}
 		LOG.info(String.format("Session %s closed because of %s", session.getId(), closeReason));
 	}
@@ -78,25 +82,28 @@ public class DrawingEndpoint {
 		system.shutdown();
 		system.awaitTermination(Duration.create(15, TimeUnit.SECONDS));
 	}
-	
+
 	/**
 	 * Atomically gets the actor in charge of handling messages for a given whiteboard.
-	 * @param whiteboardId Which whiteboard
+	 * 
+	 * @param whiteboardId
+	 *            Which whiteboard
 	 * @return Non-null actor (creates new actor, if not yet existing).
 	 */
 	private ActorRef getHandlerForWhiteboard(Long whiteboardId) {
 		whiteboardHandlers.computeIfAbsent(whiteboardId, this::createWhiteboardHandler);
 		return whiteboardHandlers.get(whiteboardId);
 	}
-	
+
 	/**
-	 * Guaranteed to be called only once per whiteboardId (see {@link ConcurrentHashMap#computeIfAbsent(Object, java.util.function.Function)}).
-	 * @param whiteboardId For which whiteboard to create an adapter
+	 * Guaranteed to be called only once per whiteboardId (see {@link ConcurrentHashMap#computeIfAbsent(Object, java.util.function.Function)} ).
+	 * 
+	 * @param whiteboardId
+	 *            For which whiteboard to create an adapter
 	 * @return new adapter for the given whiteboardId
 	 */
 	private ActorRef createWhiteboardHandler(Long whiteboardId) {
 		return system.actorOf(Props.create(WhiteboardHandler.class, whiteboardId), String.valueOf(whiteboardId));
 	}
-	
 
 }

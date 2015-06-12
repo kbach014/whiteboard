@@ -10,4 +10,12 @@
 
 <h1>Whiteboard</h1>
 
-<button data-ng-click="draw()">DRAW!</button>
+<div class="text-center">
+  <div class="btn-group">
+    <button class="btn btn-default" data-ng-click="shapetype = 'PATH'" data-ng-class="{active: shapetype == 'PATH'}"><span class="glyphicon glyphicon-pencil"></span></button>
+    <button class="btn btn-default" data-ng-click="shapetype = 'RECT'" data-ng-class="{active: shapetype == 'RECT'}"><span class="glyphicon glyphicon-stop"></span></button>
+    <button class="btn btn-default" data-ng-click="shapetype = 'TEXT'" data-ng-class="{active: shapetype == 'TEXT'}"><span class="glyphicon glyphicon-text-size"></span></button>
+  </div>
+</div>
+
+<canvas width="1140" height="855" whiteboard-shapes="shapes" style="border: 1px solid red;" whiteboard-event-callback="updateShape(event)" whiteboard-event-fps="10" whiteboard-render-fps="30" whiteboard-shape-type="shapetype"></canvas>

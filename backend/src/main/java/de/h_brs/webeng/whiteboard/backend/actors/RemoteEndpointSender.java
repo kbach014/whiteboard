@@ -5,8 +5,8 @@ import javax.websocket.RemoteEndpoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import de.h_brs.webeng.whiteboard.backend.domain.FinishedShape;
 import akka.actor.UntypedActor;
+import de.h_brs.webeng.whiteboard.backend.dto.DrawEventDto;
 
 public class RemoteEndpointSender extends UntypedActor {
 	
@@ -15,14 +15,13 @@ public class RemoteEndpointSender extends UntypedActor {
 	private final RemoteEndpoint.Async endpoint;
 	
 	public RemoteEndpointSender(RemoteEndpoint.Async endpoint) {
-		LOG.debug("adding endpoint.");
 		this.endpoint = endpoint;
 	}
 
 	@Override
 	public void onReceive(Object message) throws Exception {
 		LOG.debug("sending to client finishedShape");
-		if (message instanceof FinishedShape) {
+		if (message instanceof DrawEventDto) {
 			// TODO: buffer and send batch?
 			endpoint.sendObject(message);
 		}
