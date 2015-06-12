@@ -3,6 +3,16 @@ angular.module('whiteboard', ['ngRoute']);
 angular.module('whiteboard').config(['$routeProvider', '$httpProvider', function($routeProvider) {
 	'use strict';
 
+	$routeProvider.when('/login', {
+		controller: 'LoginCtrl',
+		templateUrl: 'partials/login.html'
+	});
+
+	$routeProvider.when('/registration', {
+		controller: 'RegistrationCtrl',
+		templateUrl: 'partials/registration.html'
+	});
+
 	$routeProvider.when('/whiteboard/:id', {
 		controller: 'WhiteboardCtrl',
 		templateUrl: 'partials/whiteboard.html'
@@ -11,6 +21,82 @@ angular.module('whiteboard').config(['$routeProvider', '$httpProvider', function
 	$routeProvider.otherwise({
 		redirectTo: '/whiteboard/2'
 	});
+
+}]);
+
+angular.module('whiteboard').run(['$location', '$rootScope', 'userService', function($location, $rootScope, userService) {
+
+	// Routing
+
+	$rootScope.currentPath = function() {
+		return $location.path();
+	};
+
+	// Auth
+
+	userService.registerLoginLogoutObserver(function() {
+		$rootScope.currentUser = userService.getCurrentUser();
+	});
+	$rootScope.currentUser = userService.getCurrentUser();
+
+}]);
+;
+
+angular.module('whiteboard').controller('LoginCtrl', ['$scope', 'userService', function($scope, userService) {
+	'use strict';
+
+	$scope.login = function(username, password) {
+		userService.login(username, password).then(function() {
+			$scope.successMessage = 'Login erfolgreich.';
+		}, function() {
+			$scope.errorMessage = 'Login fehlgeschlagen.';
+		});
+	};
+
+	$scope.logout = function() {
+		userService.logout();
+	};
+
+	$scope.dismissErrorMessage = function() {
+		$scope.errorMessage = null;
+	};
+
+	$scope.dismissSuccessMessage = function() {
+		$scope.successMessage = null;
+	};
+
+}]);
+;
+
+angular.module('whiteboard').controller('RegistrationCtrl', ['$scope', 'userService', function($scope, userService) {
+	'use strict';
+
+	$scope.register = function(firstname, lastname, username, password, repeatPassword) {
+		if (!firstname || !lastname || !username || !password || !repeatPassword) {
+			$scope.errorMessage = 'Bitte alle Felder ausfüllen.';
+		} else if (password != repeatPassword) {
+			$scope.errorMessage = 'Passwörter stimmen nicht überein.';
+		} else {
+			userService.register({
+				firstname: firstname,
+				lastname: lastname,
+				username: username,
+				password: password
+			}).then(function() {
+				$scope.successMessage = 'Registrierung erfolgreich.';
+			}, function() {
+				$scope.errorMessage = 'Fehler bei der Registrierung.';
+			});
+		}
+	};
+
+	$scope.dismissErrorMessage = function() {
+		$scope.errorMessage = null;
+	};
+
+	$scope.dismissSuccessMessage = function() {
+		$scope.successMessage = null;
+	};
 
 }]);
 ;
@@ -74,11 +160,11 @@ angular.module('whiteboard').directive('whiteboardShapes', ['$interval', 'uuidSe
       var ctx = canvas.getContext('2d');
 
       var drawShape = function(shape) {
-        if (!shape || !shape.type) {
+        if (!shape || !shape.type) {
           return;
         }
-        ctx.fillStyle = shape.color || 'black';
-        ctx.strokeStyle = shape.color || 'black';
+        ctx.fillStyle = shape.color || 'black';
+        ctx.strokeStyle = shape.color || 'black';
         switch(shape.type) {
           case 'PATH':
             if (shape.points && shape.points.length > 1) {
@@ -202,14 +288,79 @@ angular.module('whiteboard').directive('whiteboardShapes', ['$interval', 'uuidSe
       });
 
       // interval based updates:
-      var renderTimer = $interval(draw, 1000/($scope.renderFps || 1));
-      var eventTimer = $interval(sendTransientShapeEvents, 1000/($scope.eventFps || 1));
+      var renderTimer = $interval(draw, 1000/($scope.renderFps || 1));
+      var eventTimer = $interval(sendTransientShapeEvents, 1000/($scope.eventFps || 1));
       $element.on('$destroy', function() {
         $interval.cancel(renderTimer);
         $interval.cancel(eventTimer);
       });
     }
   };
+}]);
+;
+
+angular.module('whiteboard').factory('userService', ['$http', '$q', function($http, $q) {
+	'use strict';
+
+	var loginLogoutObservers = [];
+
+	var notifyLoginLogoutObservers = function() {
+		_.forEach(loginLogoutObservers, function(callback) {
+			callback();
+		});
+	};
+
+	var currentUser = null;
+
+	return {
+
+		registerLoginLogoutObserver: function(callback) {
+			loginLogoutObservers.push(callback);
+		},
+
+		unregisterLoginLogoutObserver: function(callback) {
+			_.remove(loginLogoutObservers, callback);
+		},
+
+		getCurrentUser: function() {
+			return currentUser;
+		},
+
+		login: function(username, password) {
+			var deferred = $q.defer();
+			$http.post('/backend/rest/users/login', {
+				username: username,
+				password: password
+			}).success(function(user) {
+				currentUser = user;
+				notifyLoginLogoutObservers();
+				deferred.resolve();
+			}).error(function() {
+				currentUser = null;
+				notifyLoginLogoutObservers();
+				deferred.reject();
+			});
+			return deferred.promise;
+		},
+
+		logout: function() {
+			currentUser = null;
+			notifyLoginLogoutObservers();
+
+			$http.post('/backend/rest/users/logout');
+		},
+
+		register: function(user) {
+			var deferred = $q.defer();
+			$http.post('/backend/rest/users/register', user).success(function() {
+				deferred.resolve();
+			}).error(function() {
+				deferred.reject();
+			});
+			return deferred.promise;
+		}
+
+	};
 }]);
 ;
 

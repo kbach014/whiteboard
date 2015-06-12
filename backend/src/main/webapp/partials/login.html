@@ -1,0 +1,23 @@
+<div class="alert alert-warning alert-dismissible" role="alert" data-ng-show="errorMessage">
+  <button type="button" class="close" data-ng-click="dismissErrorMessage()"><span>&times;</span></button>
+  {{errorMessage}}
+</div>
+
+<div class="alert alert-success alert-dismissible" role="alert" data-ng-show="successMessage">
+  <button type="button" class="close" data-ng-click="dismissSuccessMessage()"><span>&times;</span></button>
+  {{successMessage}}
+</div>
+
+<h1>Login</h1>
+
+<form data-ng-submit="login(username, password)">
+  <div class="form-group">
+    <label for="username">Username</label>
+    <input type="text" class="form-control" id="username" placeholder="Username" data-ng-model="username">
+  </div>
+  <div class="form-group">
+    <label for="password">Passwort</label>
+    <input type="password" class="form-control" id="password" placeholder="Passwort" data-ng-model="password">
+  </div>
+  <button type="submit" class="btn btn-default">Einloggen</button>
+</form>

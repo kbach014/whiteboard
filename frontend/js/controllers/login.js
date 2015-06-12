@@ -2,7 +2,7 @@ angular.module('whiteboard').controller('LoginCtrl', ['$scope', 'userService', f
 	'use strict';
 
 	$scope.login = function(username, password) {
-		userService.login().then(function() {
+		userService.login(username, password).then(function() {
 			$scope.successMessage = 'Login erfolgreich.';
 		}, function() {
 			$scope.errorMessage = 'Login fehlgeschlagen.';

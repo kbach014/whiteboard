@@ -13,8 +13,23 @@
 	<nav class="navbar navbar-default">
 	  <div class="container">
 	    <div class="navbar-header">
-	      <a class="navbar-brand" href="#/home">Whiteboard</a>
+				<a class="navbar-brand" href="#/home">Whiteboard</a>
 	    </div>
+
+			<ul class="nav navbar-nav navbar-right" data-ng-controller="LoginCtrl">
+				<li class="dropdown" data-ng-class="{'active': currentPath() == '/login' || currentPath() == '/registration'}">
+					<a class="pointer dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+						<span data-ng-show="!currentUser">Login/Registrierung</span>
+						<span data-ng-show="currentUser">Eingeloggt als {{currentUser.username}}</span>
+						<span class="caret"></span>
+					</a>
+					<ul class="dropdown-menu" role="menu">
+						<li data-ng-show="!currentUser"><a href="#/login">Login</a></li>
+						<li data-ng-show="!currentUser"><a href="#/registration">Registrierung</a></li>
+						<li data-ng-show="currentUser"><a class="pointer" data-ng-click="logout()">Logout</a></li>
+					</ul>
+				</li>
+			</ul>
 	</nav>
 
 	<div class="container" data-ng-view></div>

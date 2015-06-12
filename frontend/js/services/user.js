@@ -26,10 +26,6 @@ angular.module('whiteboard').factory('userService', ['$http', '$q', function($ht
 		},
 
 		login: function(username, password) {
-			// TODO remove mock shit:
-			currentUser = {username: username};
-			notifyLoginLogoutObservers();
-			
 			var deferred = $q.defer();
 			$http.post('/backend/rest/users/login', {
 				username: username,
@@ -39,9 +35,8 @@ angular.module('whiteboard').factory('userService', ['$http', '$q', function($ht
 				notifyLoginLogoutObservers();
 				deferred.resolve();
 			}).error(function() {
-				// TODO uncomment:
-				//currentUser = null;
-				//notifyLoginLogoutObservers();
+				currentUser = null;
+				notifyLoginLogoutObservers();
 				deferred.reject();
 			});
 			return deferred.promise;
@@ -51,7 +46,7 @@ angular.module('whiteboard').factory('userService', ['$http', '$q', function($ht
 			currentUser = null;
 			notifyLoginLogoutObservers();
 
-			// TODO http logout
+			$http.post('/backend/rest/users/logout');
 		},
 
 		register: function(user) {
