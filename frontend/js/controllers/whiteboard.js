@@ -11,27 +11,18 @@ angular.module('whiteboard').controller('WhiteboardCtrl', ['$scope', '$routePara
 
 	$scope.shapes = [];
 
-	$scope.shapetype = 'LINE';
+	$scope.shapetype = 'PATH';
 
-	$scope.updateShape = function(shape) {
-		var existingShape = _.findWhere($scope.shapes, {'uuid': shape.uuid});
+	$scope.updateShape = function(event) {
+		whiteboardService.scheduleDrawEvent(event);
+		var existingShape = _.findWhere($scope.shapes, {'uuid': event.shape.uuid});
 		if (existingShape) {
 			// udpate
-			_.assign(existingShape, shape);
+			_.assign(existingShape, event.shape);
 		} else {
 			// add
-			$scope.shapes.push(shape);
+			$scope.shapes.push(event.shape);
 		}
-	};
-
-	$scope.draw = function() {
-		whiteboardService.scheduleDrawEvent({
-			shapeUuid: '8218c5e7-a950-4ebb-bb3d-7d4987e8c51c',
-			eventUuid: '8218c5e7-a950-4ebb-bb3d-7d4987e8c51d',
-			shape: 'RECT',
-			type: 'START',
-			coords: '0, 0, 10, 10'
-		});
 	};
 
 	$scope.dismissErrorMessage = function() {

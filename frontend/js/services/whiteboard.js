@@ -8,6 +8,7 @@ angular.module('whiteboard').factory('whiteboardService', ['$http', '$q', '$inte
 		if (socket && socket.readyState === WebSocket.OPEN && !_.isEmpty(eventQueue)) {
 			var toSend = eventQueue;
 			eventQueue = [];
+			console.log('SEND', toSend);
 			socket.send(JSON.stringify(toSend));
 		}
 	};
@@ -19,8 +20,12 @@ angular.module('whiteboard').factory('whiteboardService', ['$http', '$q', '$inte
 			var deferred = $q.defer();
 			socket = new WebSocket('ws://localhost:8080/backend/drawings/' + whiteboardId);
 
-			socket.onerror = function(asd) {
+			socket.onerror = function() {
 				deferred.reject();
+			};
+
+			socket.onmessage = function(event) {
+				console.log('RECEIVE', JSON.parse(event.data));
 			};
 
 			socket.onopen = function() {

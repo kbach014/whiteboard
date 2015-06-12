@@ -2,26 +2,24 @@ package de.h_brs.webeng.whiteboard.backend.actors;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import akka.actor.ActorRef;
-import akka.actor.Props;
 import akka.actor.UntypedActor;
 import akka.routing.BroadcastRoutingLogic;
 import akka.routing.Router;
-import de.h_brs.webeng.whiteboard.backend.domain.DrawEvent;
-import de.h_brs.webeng.whiteboard.backend.domain.FinishedShape;
+import de.h_brs.webeng.whiteboard.backend.domain.Color;
+import de.h_brs.webeng.whiteboard.backend.dto.DrawEventDto;
+import de.h_brs.webeng.whiteboard.backend.dto.DrawEventDto.EventType;
 
 public class WhiteboardHandler extends UntypedActor {
 	
-	private static final Logger LOG = LoggerFactory.getLogger(ShapeBuilder.class);
+	private static final Logger LOG = LoggerFactory.getLogger(WhiteboardHandler.class);
 		
 	private final Long whiteboardId;
-	private final Map<UUID, ActorRef> workers = new HashMap<>();
 	private Router upstreamRouter = new Router(BroadcastRoutingLogic.apply());
+	private Map<String, Color> sessionColors = new HashMap<>();
 	
 	public WhiteboardHandler(Long whiteboardId) {
 		this.whiteboardId = whiteboardId;
@@ -29,36 +27,31 @@ public class WhiteboardHandler extends UntypedActor {
 
 	@Override
 	public void onReceive(Object message) throws Exception {
-		if (message instanceof DrawEvent) {
-			final DrawEvent event = (DrawEvent) message;
-			final ActorRef worker = getWorkerForShape(event.getShapeUuid());
-			worker.tell(message, getSelf());
-		} else if (message instanceof FinishedShape) {
-			upstreamRouter.route(message, getSelf());
-		} else if (Message.HELLO_WHITEBOARD.equals(message)) {
+		if (message instanceof DrawEventDto) {
+			final DrawEventDto event = (DrawEventDto) message;
+			this.onReceiveDrawEvent(event);
+		} else if (message instanceof HelloMessage) {
+			final HelloMessage hello = (HelloMessage) message;
+			final Color myColor = Color.values()[sessionColors.size() % Color.values().length];
+			sessionColors.put(hello.getSessionId(), myColor);
 			upstreamRouter = upstreamRouter.addRoutee(getSender());
-			LOG.debug("added receiver of whiteboard updates");
-		} else if (Message.GOODBYE_WHITEBOARD.equals(message)) {
+			LOG.debug("added receiver to whiteboard {}", whiteboardId);
+		} else if (message instanceof GoodbyeMessage) {
+			final GoodbyeMessage goodbye = (GoodbyeMessage) message;
+			sessionColors.remove(goodbye.getSessionId());
 			upstreamRouter = upstreamRouter.removeRoutee(getSender());
-			LOG.debug("removed receiver of whiteboard updates");
+			LOG.debug("removed receiver to whiteboard {}", whiteboardId);
 		} else {
 			unhandled(message);
 		}
 	}
 	
-	private ActorRef getWorkerForShape(UUID shapeUuid) {
-		// no synchronization needed here, has actors handles one message after another:
-		if (workers.containsKey(shapeUuid)) {
-			return workers.get(shapeUuid);
-		} else {
-			final ActorRef ref = getContext().actorOf(Props.create(ShapeBuilder.class, this::createWorker), shapeUuid.toString());
-			workers.put(shapeUuid, ref);
-			return ref;
+	private void onReceiveDrawEvent(DrawEventDto event) throws Exception {
+		event.getShape().setColor(sessionColors.get(event.getSessionId()));
+		if (event.getType().equals(EventType.FINISH)) {
+			// TODO persist event.getShape()
 		}
-	}
-	
-	public ShapeBuilder createWorker() throws Exception {
-		return new ShapeBuilder(whiteboardId);
+		upstreamRouter.route(event, getSelf());
 	}
 
 }
