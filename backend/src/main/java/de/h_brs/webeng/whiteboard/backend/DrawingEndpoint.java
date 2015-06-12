@@ -28,9 +28,6 @@ import de.h_brs.webeng.whiteboard.backend.actors.GoodbyeMessage;
 import de.h_brs.webeng.whiteboard.backend.actors.HelloMessage;
 import de.h_brs.webeng.whiteboard.backend.actors.RemoteEndpointSender;
 import de.h_brs.webeng.whiteboard.backend.actors.WhiteboardHandler;
-import de.h_brs.webeng.whiteboard.backend.dao.UserDAO;
-import de.h_brs.webeng.whiteboard.backend.dao.exception.*;
-import de.h_brs.webeng.whiteboard.backend.dao.impl.RedisUserDAO;
 import de.h_brs.webeng.whiteboard.backend.dto.DrawEventDto;
 
 @ServerEndpoint(value = "/drawings/{id}", decoders = { DrawEventsDecoder.class }, encoders = { DrawEventsEncoder.class })
@@ -44,29 +41,11 @@ public class DrawingEndpoint {
 	@OnOpen
 	public void onOpen(Session session, @PathParam("id") Long whiteboardId) {
 		LOG.info("Connected session " + session.getId() + " for user " + session.getUserPrincipal().getName() + " to whiteboard " + whiteboardId);
-		UserDAO userDAO = new RedisUserDAO();
 		
-		try {
-			// Is session.getUserPrincipal() authorized to draw on this whiteboard?
-			if(userDAO.userHasWhiteboard(session.getUserPrincipal().getName(), whiteboardId)) {
-				final ActorRef ref = system.actorOf(Props.create(RemoteEndpointSender.class, session.getAsyncRemote()), session.getId());
-				getHandlerForWhiteboard(whiteboardId).tell(new HelloMessage(session.getId()), ref);
-				session.getUserProperties().put("sender", ref);
-				LOG.info("User is authorized to draw on whiteboard#"+whiteboardId);
-			}
-			else {
-				LOG.info("User is NOT authorized to draw on whiteboard#"+whiteboardId);
-			}
-		} 
-		catch(UserNotFoundException e) {
-			// TODO Handle Exception
-			LOG.error("User cannot be found!");
-		}
-		catch(WhiteboardNotFoundException e) {
-			// TODO Handle Exception
-			LOG.error("Whiteboard cannot be found!");
-			
-		}
+		final ActorRef ref = system.actorOf(Props.create(RemoteEndpointSender.class, session.getAsyncRemote()), session.getId());
+		getHandlerForWhiteboard(whiteboardId).tell(new HelloMessage(session.getId()), ref);
+		session.getUserProperties().put("sender", ref);
+		
 	}
 
 	@OnMessage

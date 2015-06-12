@@ -16,10 +16,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import de.h_brs.webeng.whiteboard.backend.DrawingEndpoint;
-import de.h_brs.webeng.whiteboard.backend.dao.UserDAO;
-import de.h_brs.webeng.whiteboard.backend.dao.impl.RedisUserDAO;
 
-@WebFilter(filterName = "authFilter", urlPatterns = {"/drawings/*", "/rest/whiteboards/*"})
+@WebFilter(filterName = "authFilter", urlPatterns = {"/rest/whiteboards/*"})
 public final class AuthFilter implements Filter{
 	private static final Logger LOG = LoggerFactory.getLogger(DrawingEndpoint.class);
 	
@@ -40,25 +38,7 @@ public final class AuthFilter implements Filter{
 	private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) 
 			throws IOException, ServletException 
 	{
-		// TODO remove Hardcoding
-		request.getSession().setAttribute("username", "sebi");
 		
-		if(request.getSession().getAttribute("username") != null) {
-			String username = request.getSession().getAttribute("username").toString();
-			
-			UserDAO userDAO = new RedisUserDAO();
-			
-			if(username != null && userDAO.userExists(username)) {
-				LOG.info("User "+username+" is a valid user!");
-				chain.doFilter(new AuthenticatedRequest(request, username), response);
-			} 
-			else {
-				response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
-			}
-		} 
-		else {
-			response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
-		}
 	}
 
 	@Override

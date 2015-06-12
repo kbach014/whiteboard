@@ -14,6 +14,12 @@ import javax.ws.rs.core.Response.Status;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import de.h_brs.webeng.whiteboard.backend.dao.UserDAO;
+import de.h_brs.webeng.whiteboard.backend.dao.exception.PasswordIncorrectException;
+import de.h_brs.webeng.whiteboard.backend.dao.exception.UserAlreadyRegisteredException;
+import de.h_brs.webeng.whiteboard.backend.dao.exception.UserNotFoundException;
+import de.h_brs.webeng.whiteboard.backend.dao.impl.RedisUserDAO;
+import de.h_brs.webeng.whiteboard.backend.domain.User;
 import de.h_brs.webeng.whiteboard.backend.dto.CredentialDto;
 import de.h_brs.webeng.whiteboard.backend.dto.UserDto;
 
@@ -23,27 +29,34 @@ public class UserService {
 	
 	private static final Logger LOG = LoggerFactory.getLogger(UserService.class);
 	
+	// TODO Vielleicht noch Validation im Frontend
 	@POST
 	@Path("/login")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
 	public Response login(@Context HttpServletRequest req, CredentialDto credentials) {
-		// TODO check user/pw against database. right now all usernames > 3 chars are "successful" login attempts.
-		if (credentials.getUsername().length() > 3) {
+		UserDAO userDAO = new RedisUserDAO();
+		
+		if(credentials.getUsername() == null || credentials.getPassword() == null)
+			return Response.status(Status.UNAUTHORIZED).build();
+			
+		try {
+			User user = userDAO.login(credentials.getUsername(), credentials.getPassword());
 			LOG.info(credentials.getUsername() + " has logged in successfully.");
-			// get user from database and transfer public attributes to userDto:
-			final UserDto user = new UserDto();
-			user.setFirstname("Max");
-			user.setFirstname("Mustermann");
-			user.setUsername(credentials.getUsername());
-			// login successful! store userId as session attribute for use in AuthFilter:
+			
 			final HttpSession session= req.getSession(true);
-			session.setAttribute("userId", 42);
+			session.setAttribute("username", user.getUsername());
+			
 			return Response.ok().entity(user).build();
-		} else {
-			// login failed:
+		}
+		catch(UserNotFoundException e) {
+			return Response.status(Status.UNAUTHORIZED).build();
+		} 
+		catch(PasswordIncorrectException e) {
 			return Response.status(Status.UNAUTHORIZED).build();
 		}
+		
+		
 	}
 	
 	@POST
@@ -59,9 +72,25 @@ public class UserService {
 	@POST
 	@Path("/register")
     @Consumes(MediaType.APPLICATION_JSON)
-	public Response register(UserDto user) {
-		// TODO create user ...
-		return Response.noContent().build();
+	public Response register(UserDto userDto) {
+		UserDAO userDAO = new RedisUserDAO();
+		String firstname = userDto.getFirstname();
+		String lastname = userDto.getLastname();
+		String password = userDto.getPassword();
+		String username = userDto.getUsername();
+		
+		User user = new User(username, firstname, lastname, password);
+		try {
+			userDAO.register(user);
+			LOG.info("User "+user.getUsername()+" was registered successfully!");
+			// TODO Redirect to URL -> return Response.temporaryRedirect(location);
+			// Notwendig? oder wird in angular gerootet?
+			return Response.status(Status.OK).build();
+		} catch(UserAlreadyRegisteredException e) {
+			LOG.info(e.getMessage());
+			// TODO find better Status Code or Error Message
+			return Response.status(Status.FORBIDDEN).build();
+		}
 	}
 
 }

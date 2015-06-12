@@ -205,7 +205,6 @@ public class RedisUserDAO implements UserDAO {
 			return true;
 		} 
 		else {
-			System.out.println("Could not find user \""+username+"\" !");
 			return false;
 		}
 	}
