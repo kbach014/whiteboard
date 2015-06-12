@@ -65,15 +65,18 @@ angular.module('whiteboard').directive('whiteboardShapes', ['$interval', 'uuidSe
       };
 
       $element.on('mousedown', function(e) {
+        var x = e.offsetX || e.pageX - $element.offset().left;
+        var y = e.offsetY || e.pageY - $element.offset().top;
+        console.log('mousedown', x, y);
         switch($scope.shapeType) {
           case 'PATH':
-            transientShape = {uuid: uuidService.generateUUID(), type: 'PATH', finished: false, points: [{x: e.offsetX, y: e.offsetY}]};
+            transientShape = {uuid: uuidService.generateUUID(), type: 'PATH', finished: false, points: [{x: x, y: y}]};
             break;
           case 'RECT':
-            transientShape = {uuid: uuidService.generateUUID(), type: 'RECT', finished: false, p1: {x: e.offsetX, y: e.offsetY}, p2: {x: e.offsetX, y: e.offsetY}};
+            transientShape = {uuid: uuidService.generateUUID(), type: 'RECT', finished: false, p1: {x: x, y: y}, p2: {x: x, y: y}};
             break;
           case 'TEXT':
-            transientShape = {uuid: uuidService.generateUUID(), type: 'TEXT', finished: false, p1: {x: e.offsetX, y: e.offsetY}};
+            transientShape = {uuid: uuidService.generateUUID(), type: 'TEXT', finished: false, p1: {x: x, y: y}};
             break;
           default:
             console.warn('Unsupported shape ', $scope.shapeType);
@@ -85,13 +88,15 @@ angular.module('whiteboard').directive('whiteboardShapes', ['$interval', 'uuidSe
           // noop
           return;
         }
+        var x = e.offsetX || e.pageX - $element.offset().left;
+        var y = e.offsetY || e.pageY - $element.offset().top;
         // intermediate update:
         switch(transientShape.type) {
           case 'PATH':
-            transientShape.points.push({x: e.offsetX, y: e.offsetY});
+            transientShape.points.push({x: x, y: y});
             break;
           case 'RECT':
-            transientShape.p2 = {x: e.offsetX, y: e.offsetY};
+            transientShape.p2 = {x: x, y: y};
             break;
           default:
             //no-op
@@ -103,14 +108,16 @@ angular.module('whiteboard').directive('whiteboardShapes', ['$interval', 'uuidSe
           // noop
           return;
         }
+        var x = e.offsetX || e.pageX - $element.offset().left;
+        var y = e.offsetY || e.pageY - $element.offset().top;
         // final update:
         transientShape.finished = true;
         switch(transientShape.type) {
           case 'PATH':
-            transientShape.points.push({x: e.offsetX, y: e.offsetY});
+            transientShape.points.push({x: x, y: y});
             break;
           case 'RECT':
-            transientShape.p2 = {x: e.offsetX, y: e.offsetY};
+            transientShape.p2 = {x: x, y: y};
             break;
           default:
             //no-op
