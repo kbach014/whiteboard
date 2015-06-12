@@ -19,7 +19,11 @@ public interface UserDAO {
 	void registerToWhiteboard(User user, Whiteboard whiteboard) throws UserNotFoundException, WhiteboardNotFoundException, UserWhiteboardException;
 	
     List<User> findAllUsersFromWB(Whiteboard whiteboard) throws WhiteboardNotFoundException;
+    
+    public boolean userHasWhiteboard(User user, Whiteboard whiteboard) throws UserNotFoundException, WhiteboardNotFoundException;
 	
+    public boolean userHasWhiteboard(String username, Long wbID) throws UserNotFoundException, WhiteboardNotFoundException; 
+			
 	boolean userExists(String username);
 	
 	boolean userExists(User user);

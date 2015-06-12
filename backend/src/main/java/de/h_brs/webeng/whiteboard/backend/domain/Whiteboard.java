@@ -11,6 +11,8 @@ import lombok.Setter;
 @EqualsAndHashCode
 public class Whiteboard {
 	private long wbid;
+	
+	private boolean shared;
 
     private String creator;
 

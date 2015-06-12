@@ -12,6 +12,9 @@ import javax.servlet.annotation.WebFilter;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import de.h_brs.webeng.whiteboard.backend.dao.UserDAO;
+import de.h_brs.webeng.whiteboard.backend.dao.impl.RedisUserDAO;
+
 @WebFilter(filterName = "authFilter", urlPatterns = {"/drawings/*", "/rest/*"})
 public final class AuthFilter implements Filter{
 	
@@ -30,9 +33,17 @@ public final class AuthFilter implements Filter{
 	}
 	
 	private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException {
-		// TODO get real user from request.getSession(true).getAttribute("username");
-		// TODO or else response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
-		chain.doFilter(new AuthenticatedRequest(request, "anonymous"), response);
+		//String username = request.getSession().getAttribute("username").toString();
+		String username = "sebi";
+		UserDAO userDAO = new RedisUserDAO();
+		
+		if(userDAO.userExists(username)) {
+			chain.doFilter(new AuthenticatedRequest(request, username), response);
+		} 
+		else {
+			// TODO EXCEPTION
+			response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+		}
 	}
 
 	@Override

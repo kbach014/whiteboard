@@ -27,6 +27,9 @@ import akka.actor.Props;
 import de.h_brs.webeng.whiteboard.backend.actors.Message;
 import de.h_brs.webeng.whiteboard.backend.actors.RemoteEndpointSender;
 import de.h_brs.webeng.whiteboard.backend.actors.WhiteboardHandler;
+import de.h_brs.webeng.whiteboard.backend.dao.UserDAO;
+import de.h_brs.webeng.whiteboard.backend.dao.exception.*;
+import de.h_brs.webeng.whiteboard.backend.dao.impl.RedisUserDAO;
 import de.h_brs.webeng.whiteboard.backend.domain.DrawEvent;
 
 @ServerEndpoint(value = "/drawings/{id}", decoders = { DrawEventsDecoder.class }, encoders = {FinishedShapeEncoder.class})
@@ -39,12 +42,22 @@ public class DrawingEndpoint {
 
 	@OnOpen
 	public void onOpen(Session session, @PathParam("id") Long whiteboardId) {
-		LOG.info("Connected session " + session.getId() + " for user " + session.getUserPrincipal().getName() + " to whiteboard " + whiteboardId);
-		// TODO: is session.getUserPrincipal() authorized to draw on this whiteboard?
+		LOG.info("Connected session " + session.getId() + " for user " + session.getUserPrincipal().getName() + " to whiteboard " + whiteboardId);	
+		UserDAO userDAO = new RedisUserDAO();
 		
-		final ActorRef ref = system.actorOf(Props.create(RemoteEndpointSender.class, session.getAsyncRemote()), session.getId());
-		getHandlerForWhiteboard(whiteboardId).tell(Message.HELLO_WHITEBOARD, ref);
-		session.getUserProperties().put("sender", ref);
+		try {
+			if(userDAO.userHasWhiteboard(session.getUserPrincipal().getName(), whiteboardId)) {
+				final ActorRef ref = system.actorOf(Props.create(RemoteEndpointSender.class, session.getAsyncRemote()), session.getId());
+				getHandlerForWhiteboard(whiteboardId).tell(Message.HELLO_WHITEBOARD, ref);
+				session.getUserProperties().put("sender", ref);
+			}
+		} 
+		catch(UserNotFoundException e) {
+			// TODO Handle Exception
+		}
+		catch(WhiteboardNotFoundException e) {
+			// TODO Handle Exception
+		}
 	}
 
 	@OnMessage

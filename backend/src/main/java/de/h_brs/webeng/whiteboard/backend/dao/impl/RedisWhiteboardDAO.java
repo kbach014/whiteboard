@@ -19,6 +19,9 @@ public class RedisWhiteboardDAO implements WhiteboardDAO {
 	
 	private final String ALL_WHITEBOARDS = "whiteboards";
 	
+	public final int PUBLIC  = 0;
+	public final int PRIVATE = 1;
+	
 	/**
 	 * Inserts a new Whiteboard-Instance in the database.
 	 * The instance will be saved as a Redis-Hash and the 
@@ -201,6 +204,20 @@ public class RedisWhiteboardDAO implements WhiteboardDAO {
 		
 		// TODO Find the rest
 		return unregisteredWhiteboards;
+	}
+	
+	@Override
+	public void setPublicity(Whiteboard wb, int mode) {
+		switch(mode) {
+			case PUBLIC:
+				if(!wb.isShared())
+					wb.setShared(true);
+				break;
+			case PRIVATE:
+				if(wb.isShared())
+					wb.setShared(false);
+				break;
+		}
 	}
 	
 	public boolean whiteboardExists(String wbid) {

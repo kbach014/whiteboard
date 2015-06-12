@@ -8,7 +8,6 @@ import java.util.Map;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.SortingParams;
 import redis.clients.jedis.Transaction;
-import de.h_brs.webeng.whiteboard.backend.dao.UserDAO;
 import de.h_brs.webeng.whiteboard.backend.dao.*;
 import de.h_brs.webeng.whiteboard.backend.dao.exception.*;
 import de.h_brs.webeng.whiteboard.backend.domain.*;
@@ -168,6 +167,39 @@ public class RedisUserDAO implements UserDAO {
 		}
 	}
 	
+
+	public boolean userHasWhiteboard(User user, Whiteboard whiteboard) 
+			throws UserNotFoundException, WhiteboardNotFoundException 
+	{
+		WhiteboardDAO wbDAO = new RedisWhiteboardDAO();
+		if(!userExists(user))
+			throw new UserNotFoundException();
+		if(!wbDAO.whiteboardExists(whiteboard))
+			throw new WhiteboardNotFoundException();
+		
+		
+		if(jedis.sismember("user:"+user.getUsername()+":whiteboards", String.valueOf(whiteboard.getWbid())))
+			return true;
+		else 
+			return false;
+	}
+	
+	public boolean userHasWhiteboard(String username, Long wbID) 
+			throws UserNotFoundException, WhiteboardNotFoundException 
+	{
+		WhiteboardDAO wbDAO = new RedisWhiteboardDAO();
+		if(!userExists(username))
+			throw new UserNotFoundException();
+		if(!wbDAO.whiteboardExists(String.valueOf(wbID)))
+			throw new WhiteboardNotFoundException();
+		
+		
+		if(jedis.sismember("user:"+username+":whiteboards", String.valueOf(wbID)))
+			return true;
+		else 
+			return false;
+	}
+	
 	public boolean userExists(String username) {
 		if(jedis.sismember(ALL_USERS, username)) {
 			return true;
@@ -181,5 +213,7 @@ public class RedisUserDAO implements UserDAO {
 	public boolean userExists(User user) {
 		return userExists(user.getUsername());
 	}
+	
+	
 
 }

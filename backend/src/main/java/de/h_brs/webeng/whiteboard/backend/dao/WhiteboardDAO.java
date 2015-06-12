@@ -20,6 +20,8 @@ public interface WhiteboardDAO {
 	List<Whiteboard> findRegisteredWhiteboards(User user) throws UserNotFoundException;
 	
 	List<Whiteboard> findUnregisteredWhiteboards(User user, int start, int count) throws UserNotFoundException;
+	
+	public void setPublicity(Whiteboard wb, int mode);
     
     boolean whiteboardExists(String wbid);
     
