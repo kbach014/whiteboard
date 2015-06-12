@@ -20,10 +20,10 @@ public class RedisShapeDAO implements ShapeDAO {
 
 	private Jedis jedis = MyJedisPool.getPool("localhost").getResource();
 	
-	public static final String FIELD_POS_X 			= "x";
-	public static final String FIELD_POS_Y 			= "y";
-	public static final String FIELD_RECT_WIDTH 	= "w";
-	public static final String FIELD_RECT_HEIGHT	= "h";
+	public static final String FIELD_POS_X1			= "x1";
+	public static final String FIELD_POS_Y1			= "y1";
+	public static final String FIELD_POS_X2			= "x2";
+	public static final String FIELD_POS_Y2			= "y2";
 	public static final String FIELD_CIRCLE_RADIUS 	= "r";
 	public static final String FIELD_SHAPE_TYPE 	= "type";
 	
@@ -48,10 +48,11 @@ public class RedisShapeDAO implements ShapeDAO {
 			
 			Transaction tx = jedis.multi();
 			Map<String, String> rectProperties = new HashMap<String, String>();
-			rectProperties.put(FIELD_POS_X, String.valueOf(rect.getCoordinate().getX()));
-			rectProperties.put(FIELD_POS_Y, String.valueOf(rect.getCoordinate().getY()));
-			rectProperties.put(FIELD_RECT_WIDTH, String.valueOf(rect.getWidth()));
-			rectProperties.put(FIELD_RECT_HEIGHT, String.valueOf(rect.getHeight()));
+			rectProperties.put(FIELD_POS_X1, String.valueOf(rect.getP1().getX()));
+			rectProperties.put(FIELD_POS_Y1, String.valueOf(rect.getP1().getY()));
+			rectProperties.put(FIELD_POS_X2, String.valueOf(rect.getP2().getX()));
+			rectProperties.put(FIELD_POS_Y2, String.valueOf(rect.getP2().getY()));
+			
 			rectProperties.put(FIELD_SHAPE_TYPE, String.valueOf("r"));
 			
 			tx.hmset(rect.getShapeKey(), rectProperties);
@@ -82,8 +83,8 @@ public class RedisShapeDAO implements ShapeDAO {
 			
 			Transaction tx = jedis.multi();
 			Map<String, String> rectProperties = new HashMap<String, String>();
-			rectProperties.put(FIELD_POS_X, String.valueOf(circle.getCoordinate().getX()));
-			rectProperties.put(FIELD_POS_Y, String.valueOf(circle.getCoordinate().getY()));
+			rectProperties.put(FIELD_POS_X1, String.valueOf(circle.getCoordinate().getX()));
+			rectProperties.put(FIELD_POS_Y1, String.valueOf(circle.getCoordinate().getY()));
 			rectProperties.put(FIELD_CIRCLE_RADIUS, String.valueOf(circle.getRadius()));
 			rectProperties.put(FIELD_SHAPE_TYPE, String.valueOf("c"));
 			
@@ -176,8 +177,8 @@ public class RedisShapeDAO implements ShapeDAO {
 				
 				if(properties.get(FIELD_SHAPE_TYPE).equals("c")) {
 					int radius = Integer.parseInt(properties.get(FIELD_CIRCLE_RADIUS));
-					int posX = Integer.parseInt(properties.get(FIELD_POS_X));
-					int posY = Integer.parseInt(properties.get(FIELD_POS_Y));
+					int posX = Integer.parseInt(properties.get(FIELD_POS_X1));
+					int posY = Integer.parseInt(properties.get(FIELD_POS_Y1));
 					
 					Shape c = new Circle(registeredUseres.get(x), whiteboard, 
 							new Point(posX, posY), radius);
@@ -185,13 +186,12 @@ public class RedisShapeDAO implements ShapeDAO {
 					shapes.add(c);
 				} 
 				else if(properties.get(FIELD_SHAPE_TYPE).equals("r")) {
-					int width = Integer.parseInt(properties.get(FIELD_RECT_WIDTH));
-					int height = Integer.parseInt(properties.get(FIELD_RECT_HEIGHT));
-					int posX = Integer.parseInt(properties.get(FIELD_POS_X));
-					int posY = Integer.parseInt(properties.get(FIELD_POS_Y));
+					int x1 = Integer.parseInt(properties.get(FIELD_POS_X1));
+					int y1 = Integer.parseInt(properties.get(FIELD_POS_Y1));
+					int x2 = Integer.parseInt(properties.get(FIELD_POS_X2));
+					int y2 = Integer.parseInt(properties.get(FIELD_POS_Y2));
 					
-					Shape r = new Rectangle(registeredUseres.get(x), whiteboard, 
-							new Point(posX, posY), width, height);
+					Shape r = new Rectangle(registeredUseres.get(x), whiteboard, new Point(x1, y1), new Point(x2, y2));
 					
 					shapes.add(r);
 				}

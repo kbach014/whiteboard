@@ -9,9 +9,14 @@ import org.slf4j.LoggerFactory;
 import akka.actor.UntypedActor;
 import akka.routing.BroadcastRoutingLogic;
 import akka.routing.Router;
+import de.h_brs.webeng.whiteboard.backend.dao.ShapeDAO;
+import de.h_brs.webeng.whiteboard.backend.dao.impl.RedisShapeDAO;
 import de.h_brs.webeng.whiteboard.backend.domain.Color;
+import de.h_brs.webeng.whiteboard.backend.domain.Rectangle;
+import de.h_brs.webeng.whiteboard.backend.domain.ShapeType;
 import de.h_brs.webeng.whiteboard.backend.dto.DrawEventDto;
 import de.h_brs.webeng.whiteboard.backend.dto.DrawEventDto.EventType;
+import de.h_brs.webeng.whiteboard.backend.dto.ShapeDto;
 
 public class WhiteboardHandler extends UntypedActor {
 	
@@ -49,7 +54,17 @@ public class WhiteboardHandler extends UntypedActor {
 	private void onReceiveDrawEvent(DrawEventDto event) throws Exception {
 		event.getShape().setColor(sessionColors.get(event.getSessionId()));
 		if (event.getType().equals(EventType.FINISH)) {
-			// TODO persist event.getShape()
+			if(event.getShape().getType() == ShapeType.RECT) {
+				ShapeDto shapeDto = event.getShape();
+				
+				// TODO Kacke, an dieser Stelle brauchen wir doch den User, denn sonst weiß das Shape 
+				// nicht von dem es gezeichnet wrude
+				// Am besten durch das DrawEventDto gekapselt übergeben..
+				Rectangle rect = new Rectangle("", String.valueOf(whiteboardId), shapeDto.getP1(), shapeDto.getP2());
+				ShapeDAO shapeDAO = new RedisShapeDAO(); 
+				//shapeDAO.insertRect(rect);
+			}
+			// TODO restliche Shapes überprüfen
 		}
 		upstreamRouter.route(event, getSelf());
 	}
