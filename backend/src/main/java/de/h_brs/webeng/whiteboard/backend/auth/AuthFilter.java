@@ -19,7 +19,7 @@ import de.h_brs.webeng.whiteboard.backend.DrawingEndpoint;
 import de.h_brs.webeng.whiteboard.backend.dao.UserDAO;
 import de.h_brs.webeng.whiteboard.backend.dao.impl.RedisUserDAO;
 
-@WebFilter(filterName = "authFilter", urlPatterns = {"/drawings/*", "/rest/*"})
+@WebFilter(filterName = "authFilter", urlPatterns = {"/drawings/*", "/rest/whiteboards/*"})
 public final class AuthFilter implements Filter{
 	private static final Logger LOG = LoggerFactory.getLogger(DrawingEndpoint.class);
 	
