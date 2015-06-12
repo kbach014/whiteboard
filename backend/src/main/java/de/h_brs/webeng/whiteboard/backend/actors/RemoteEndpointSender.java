@@ -20,7 +20,6 @@ public class RemoteEndpointSender extends UntypedActor {
 
 	@Override
 	public void onReceive(Object message) throws Exception {
-		LOG.debug("sending to client finishedShape");
 		if (message instanceof DrawEventDto) {
 			// TODO: buffer and send batch?
 			endpoint.sendObject(message);
