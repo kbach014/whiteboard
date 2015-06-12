@@ -12,11 +12,16 @@ import javax.servlet.annotation.WebFilter;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import de.h_brs.webeng.whiteboard.backend.DrawingEndpoint;
 import de.h_brs.webeng.whiteboard.backend.dao.UserDAO;
 import de.h_brs.webeng.whiteboard.backend.dao.impl.RedisUserDAO;
 
 @WebFilter(filterName = "authFilter", urlPatterns = {"/drawings/*", "/rest/*"})
 public final class AuthFilter implements Filter{
+	private static final Logger LOG = LoggerFactory.getLogger(DrawingEndpoint.class);
 	
 	@Override
 	public void init(FilterConfig filterConfig) throws ServletException {
@@ -32,17 +37,29 @@ public final class AuthFilter implements Filter{
 		}
 	}
 	
-	private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException {
-		//String username = request.getSession().getAttribute("username").toString();
-		String username = "sebi";
-		UserDAO userDAO = new RedisUserDAO();
+	private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) 
+			throws IOException, ServletException 
+	{
+		// TODO remove Hardcoding
+		request.getSession().setAttribute("username", "sebi");
 		
-		if(userDAO.userExists(username)) {
-			chain.doFilter(new AuthenticatedRequest(request, username), response);
+		if(request.getSession().getAttribute("username") != null) {
+			String username = request.getSession().getAttribute("username").toString();
+			
+			UserDAO userDAO = new RedisUserDAO();
+			
+			if(username != null && userDAO.userExists(username)) {
+				LOG.info("User "+username+" is a valid user!");
+				chain.doFilter(new AuthenticatedRequest(request, username), response);
+			} 
+			else {
+				// TODO EXCEPTION HANDLING
+				throw new ServletException("USER NOT AUTHORIZED!");
+			}
 		} 
 		else {
-			// TODO EXCEPTION
-			response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+			// TODO EXCEPTION HANDLING
+			throw new ServletException("USER NOT AUTHORIZED!");
 		}
 	}
 

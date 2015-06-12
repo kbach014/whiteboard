@@ -9,7 +9,7 @@ angular.module('whiteboard').config(['$routeProvider', '$httpProvider', function
 	});
 
 	$routeProvider.otherwise({
-		redirectTo: '/whiteboard/42'
+		redirectTo: '/whiteboard/2'
 	});
 
 }]);

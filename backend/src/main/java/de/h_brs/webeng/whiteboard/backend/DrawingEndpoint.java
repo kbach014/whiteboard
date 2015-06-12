@@ -47,18 +47,25 @@ public class DrawingEndpoint {
 		UserDAO userDAO = new RedisUserDAO();
 		
 		try {
-			// is session.getUserPrincipal() authorized to draw on this whiteboard?
+			// Is session.getUserPrincipal() authorized to draw on this whiteboard?
 			if(userDAO.userHasWhiteboard(session.getUserPrincipal().getName(), whiteboardId)) {
 				final ActorRef ref = system.actorOf(Props.create(RemoteEndpointSender.class, session.getAsyncRemote()), session.getId());
 				getHandlerForWhiteboard(whiteboardId).tell(new HelloMessage(session.getId()), ref);
 				session.getUserProperties().put("sender", ref);
+				LOG.info("User is authorized to draw on whiteboard#"+whiteboardId);
+			}
+			else {
+				LOG.info("User is NOT authorized to draw on whiteboard#"+whiteboardId);
 			}
 		} 
 		catch(UserNotFoundException e) {
 			// TODO Handle Exception
+			LOG.error("User cannot be found!");
 		}
 		catch(WhiteboardNotFoundException e) {
 			// TODO Handle Exception
+			LOG.error("Whiteboard cannot be found!");
+			
 		}
 	}
 
