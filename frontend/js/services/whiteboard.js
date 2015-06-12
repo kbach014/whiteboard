@@ -25,7 +25,7 @@ angular.module('whiteboard').factory('whiteboardService', ['$http', '$q', '$inte
 			};
 
 			socket.onmessage = function(event) {
-				console.log('RECEIVE', event.data);
+				console.log('RECEIVE', JSON.parse(event.data));
 			};
 
 			socket.onopen = function() {

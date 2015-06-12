@@ -10,6 +10,7 @@ import javax.ws.rs.core.MediaType;
 
 import de.h_brs.webeng.whiteboard.backend.domain.User;
 
+// http://localhost:8080/backend/rest/users
 @Path("users")
 public class UserService {
 	

@@ -159,6 +159,7 @@ angular.module('whiteboard').directive('whiteboardShapes', ['$interval', 'uuidSe
           return;
         }
         // final update:
+        transientShape.finished = true;
         switch(transientShape.type) {
           case 'PATH':
             transientShape.points.push({x: e.offsetX, y: e.offsetY});
@@ -256,7 +257,7 @@ angular.module('whiteboard').factory('whiteboardService', ['$http', '$q', '$inte
 			};
 
 			socket.onmessage = function(event) {
-				console.log('RECEIVE', event.data);
+				console.log('RECEIVE', JSON.parse(event.data));
 			};
 
 			socket.onopen = function() {

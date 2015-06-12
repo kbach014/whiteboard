@@ -11,6 +11,7 @@ import akka.routing.BroadcastRoutingLogic;
 import akka.routing.Router;
 import de.h_brs.webeng.whiteboard.backend.domain.Color;
 import de.h_brs.webeng.whiteboard.backend.dto.DrawEventDto;
+import de.h_brs.webeng.whiteboard.backend.dto.DrawEventDto.EventType;
 
 public class WhiteboardHandler extends UntypedActor {
 	
@@ -47,7 +48,9 @@ public class WhiteboardHandler extends UntypedActor {
 	
 	private void onReceiveDrawEvent(DrawEventDto event) throws Exception {
 		event.getShape().setColor(sessionColors.get(event.getSessionId()));
-		// TODO persist if finished
+		if (event.getType().equals(EventType.FINISH)) {
+			// TODO persist event.getShape()
+		}
 		upstreamRouter.route(event, getSelf());
 	}
 

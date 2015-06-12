@@ -104,6 +104,7 @@ angular.module('whiteboard').directive('whiteboardShapes', ['$interval', 'uuidSe
           return;
         }
         // final update:
+        transientShape.finished = true;
         switch(transientShape.type) {
           case 'PATH':
             transientShape.points.push({x: e.offsetX, y: e.offsetY});
