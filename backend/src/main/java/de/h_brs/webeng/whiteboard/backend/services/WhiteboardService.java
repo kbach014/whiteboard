@@ -64,6 +64,11 @@ public class WhiteboardService {
 				dto.setCreator(wb.getCreator());
 				return dto;
 			}).collect(Collectors.toList());
+			
+			for(int x=0; x<dtos.size(); ++x) {
+				System.out.println(dtos.get(x).getId());
+			}
+			
 			return Response.ok(dtos).build();
 		} catch (UserNotFoundException e) {
 			return Response.status(Status.UNAUTHORIZED).build();

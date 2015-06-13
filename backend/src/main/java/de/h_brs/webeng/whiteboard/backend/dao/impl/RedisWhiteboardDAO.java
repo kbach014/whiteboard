@@ -34,10 +34,10 @@ public class RedisWhiteboardDAO implements WhiteboardDAO {
 			UserDAO userDAO = new RedisUserDAO();
 			
 			if(userDAO.userExists(creatorName)) {
-				Transaction tx = jedis.multi();
-				
 				// Generate a new ID (atomic operation)
 				long wbid = jedis.incr("wbid");
+				
+				Transaction tx = jedis.multi();
 						
 				//Store singleWhiteboard Instance as a Redis Hash
 				String wbKey = "whiteboard:"+wbid;
