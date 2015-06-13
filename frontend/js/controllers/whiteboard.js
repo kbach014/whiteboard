@@ -1,28 +1,39 @@
 angular.module('whiteboard').controller('WhiteboardCtrl', ['$scope', '$routeParams', 'whiteboardService', function($scope, $routeParams, whiteboardService) {
 	'use strict';
 
-	if ($routeParams.id) {
-		whiteboardService.connect($routeParams.id).then(function() {
-			$scope.successMessage = 'Connection established.';
-		}, function() {
-			$scope.errorMessage = 'Unable to connect to shared whiteboard.';
-		});
-	}
-
 	$scope.shapes = [];
 
 	$scope.shapetype = 'PATH';
 
-	$scope.updateShape = function(event) {
-		whiteboardService.scheduleDrawEvent(event);
-		var existingShape = _.findWhere($scope.shapes, {'uuid': event.shape.uuid});
+	var addOrUpdateShape = function(shape) {
+		console.log('updating shape', shape);
+		var existingShape = _.findWhere($scope.shapes, {'uuid': shape.uuid});
 		if (existingShape) {
 			// udpate
-			_.assign(existingShape, event.shape);
+			_.assign(existingShape, shape);
 		} else {
 			// add
-			$scope.shapes.push(event.shape);
+			$scope.shapes.push(shape);
 		}
+	};
+
+	if ($routeParams.id) {
+		whiteboardService.connect($routeParams.id).then(function() {
+			$scope.successMessage = 'Connection established.';
+			whiteboardService.setReceiverCallback(function(remoteDrawEvent) {
+				console.log('received', remoteDrawEvent);
+				addOrUpdateShape(remoteDrawEvent.shape);
+			});
+		}, function() {
+			$scope.errorMessage = 'Unable to connect to shared whiteboard.';
+		});
+	} else {
+		$scope.errorMessage = 'Ungültiges Whiteboard.';
+	}
+
+	$scope.onDraw = function(event) {
+		whiteboardService.scheduleDrawEvent(event);
+		addOrUpdateShape(event.shape);
 	};
 
 	$scope.dismissErrorMessage = function() {

@@ -16,6 +16,10 @@
 				<a class="navbar-brand" href="#/home">Whiteboard</a>
 	    </div>
 
+			<ul class="nav navbar-nav navbar-left" data-ng-show="currentUser">
+        <li><a href="#/myWhiteboards">Meine Whiteboards</a></li>
+			</ul>
+
 			<ul class="nav navbar-nav navbar-right" data-ng-controller="LoginCtrl">
 				<li class="dropdown" data-ng-class="{'active': currentPath() == '/login' || currentPath() == '/registration'}">
 					<a class="pointer dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">

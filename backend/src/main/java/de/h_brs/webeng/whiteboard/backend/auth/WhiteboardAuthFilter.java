@@ -21,12 +21,12 @@ import de.h_brs.webeng.whiteboard.backend.dao.exception.UserNotFoundException;
 import de.h_brs.webeng.whiteboard.backend.dao.exception.WhiteboardNotFoundException;
 import de.h_brs.webeng.whiteboard.backend.dao.impl.RedisUserDAO;
 
-@WebFilter(filterName = "whiteboardAuthFilter", urlPatterns = {"/drawings/*"})
-public class WhiteboardAuthFilter implements Filter  {
 
+@WebFilter(filterName = "whiteboardAuthFilter", urlPatterns = { "/drawings/*" })
+public class WhiteboardAuthFilter implements Filter {
 	private static final Logger LOG = LoggerFactory.getLogger(DrawingEndpoint.class);
 	private final String URL_PREFIX = "/backend/drawings/";
-	
+
 	@Override
 	public void init(FilterConfig filterConfig) throws ServletException {
 		// noop
@@ -40,40 +40,36 @@ public class WhiteboardAuthFilter implements Filter  {
 			chain.doFilter(request, response);
 		}
 	}
-	
-	private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) 
-			throws IOException, ServletException 
-	{
+
+	private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException {
 		// TODO remove Hardcoding
 		request.getSession().setAttribute("username", "sebi");
-		
-		if(request.getSession().getAttribute("username") != null) {
+
+		if (request.getSession().getAttribute("username") != null) {
 			String username = request.getSession().getAttribute("username").toString();
 			String url = request.getRequestURI();
 			Long wbID = Long.parseLong(url.substring(URL_PREFIX.length(), url.length()));
-			
-			if(userIsValid(username)) {
+
+			if (userIsValid(username)) {
 				try {
-					if(userHasAccessToWhiteboard(username, wbID)) {
+					if (userHasAccessToWhiteboard(username, wbID)) {
+						// success
 						chain.doFilter(new AuthenticatedRequest(request, username), response);
-					} 
-					else {
-						LOG.info("User "+username+" has no access to whiteboard#"+wbID);
+					} else {
+						LOG.info("User " + username + " has no access to whiteboard#" + wbID);
 						response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
 					}
-				}
-				catch(UserNotFoundException e) {}
-				catch(WhiteboardNotFoundException e) {
-					LOG.error("Whiteboard#"+wbID+" cannot be found!");
+				} catch (UserNotFoundException e) {
+				} catch (WhiteboardNotFoundException e) {
+					LOG.error("Whiteboard#" + wbID + " cannot be found!");
 					response.sendError(HttpServletResponse.SC_NOT_FOUND);
 				}
-			} 
-			else {
-				LOG.error(username+" is NOT valid user!");
+
+			} else {
+				LOG.error(username + " is NOT valid user!");
 				response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
 			}
-		} 
-		else {
+		} else {
 			LOG.error("username cannot be NULL!");
 			response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
 		}
@@ -83,32 +79,28 @@ public class WhiteboardAuthFilter implements Filter  {
 	public void destroy() {
 		// noop
 	}
-	
-	
-	
+
 	private boolean userHasAccessToWhiteboard(String username, Long wbID) throws UserNotFoundException, WhiteboardNotFoundException {
 		UserDAO userDAO = new RedisUserDAO();
 		// Is session.getUserPrincipal() authorized to draw on this whiteboard?
-		if(userDAO.userHasWhiteboard(username, wbID)) {
-			LOG.info("User is authorized to draw on whiteboard#"+wbID);
+		if (userDAO.userHasWhiteboard(username, wbID)) {
+			LOG.info("User is authorized to draw on whiteboard#" + wbID);
 			return true;
-		}
-		else {
-			LOG.info("User is NOT authorized to draw on whiteboard#"+wbID);
+		} else {
+			LOG.info("User is NOT authorized to draw on whiteboard#" + wbID);
 			return false;
 		}
 	}
-	
+
 	private boolean userIsValid(String username) {
 		UserDAO userDAO = new RedisUserDAO();
-	
-		if(username != null && userDAO.userExists(username)) {
-			LOG.info("User "+username+" is a valid user!");
+
+		if (username != null && userDAO.userExists(username)) {
+			LOG.info("User " + username + " is a valid user!");
 			return true;
-			
-		}
-		else {
-			LOG.info("User "+username+" is NOT a valid user!");
+
+		} else {
+			LOG.info("User " + username + " is NOT a valid user!");
 			return false;
 		}
 	}
