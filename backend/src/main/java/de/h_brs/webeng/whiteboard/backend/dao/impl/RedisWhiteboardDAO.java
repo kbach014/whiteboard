@@ -29,11 +29,11 @@ public class RedisWhiteboardDAO implements WhiteboardDAO {
 	 * indicates all Whiteboards 
 	 */
 	@Override
-	public Whiteboard insertWhiteboard(User creator) throws UserNotFoundException {
-		if(creator != null) {
+	public Whiteboard insertWhiteboard(String creatorName) throws UserNotFoundException {
+		if(creatorName != null) {
 			UserDAO userDAO = new RedisUserDAO();
 			
-			if(userDAO.userExists(creator)) {
+			if(userDAO.userExists(creatorName)) {
 				Transaction tx = jedis.multi();
 				
 				// Generate a new ID (atomic operation)
@@ -42,14 +42,20 @@ public class RedisWhiteboardDAO implements WhiteboardDAO {
 				//Store singleWhiteboard Instance as a Redis Hash
 				String wbKey = "whiteboard:"+wbid;
 				tx.hset(wbKey, "wbid", String.valueOf(wbid));
-				tx.hset(wbKey, "creator", creator.getUsername());
+				tx.hset(wbKey, "creator", creatorName);
 						
 				// Put Whiteboard Key in a Redis Set
 				tx.sadd("whiteboards", String.valueOf(wbid));
 				
+				// Register creator to his own whiteboard:
+				String wbUsersKey = "whiteboard:" + wbid + ":users";
+				String userWbsKey = "user:" + creatorName + ":whiteboards";
+				tx.sadd(wbUsersKey, creatorName);
+				tx.sadd(userWbsKey, String.valueOf(wbid));
+				
 				tx.exec();
 				
-				Whiteboard wb = new Whiteboard(wbid, creator.getUsername());
+				Whiteboard wb = new Whiteboard(wbid, creatorName);
 				
 				return wb;
 			}
@@ -131,12 +137,12 @@ public class RedisWhiteboardDAO implements WhiteboardDAO {
 	 * or any other User of the Whiteboard.
 	 */
 	@Override
-	public List<Whiteboard> findRegisteredWhiteboards(User user) throws UserNotFoundException {
+	public List<Whiteboard> findRegisteredWhiteboards(String username) throws UserNotFoundException {
 		List<Whiteboard> userWhiteboards = new ArrayList<Whiteboard>();
 		
 		UserDAO userDAO = new RedisUserDAO();
-		if(userDAO.userExists(user)) {
-			List<String> lst = jedis.sort("user:"+user.getUsername()+":whiteboards", 
+		if(userDAO.userExists(username)) {
+			List<String> lst = jedis.sort("user:"+username+":whiteboards", 
 					new SortingParams().nosort().get("whiteboard:*->wbid", "whiteboard:*->creator"));
 			
 			if(!lst.isEmpty()) {

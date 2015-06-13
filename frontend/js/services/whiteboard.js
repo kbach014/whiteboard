@@ -8,7 +8,6 @@ angular.module('whiteboard').factory('whiteboardService', ['$http', '$q', '$inte
 		if (socket && socket.readyState === WebSocket.OPEN && !_.isEmpty(eventQueue)) {
 			var toSend = eventQueue;
 			eventQueue = [];
-			console.log('SEND', toSend);
 			socket.send(JSON.stringify(toSend));
 		}
 	};
@@ -24,10 +23,6 @@ angular.module('whiteboard').factory('whiteboardService', ['$http', '$q', '$inte
 				deferred.reject();
 			};
 
-			socket.onmessage = function(event) {
-				console.log('RECEIVE', JSON.parse(event.data));
-			};
-
 			socket.onopen = function() {
 				socket.onerror = _.noop();
 				queueDrainer = $interval(drainQueue, 100, false);
@@ -38,8 +33,18 @@ angular.module('whiteboard').factory('whiteboardService', ['$http', '$q', '$inte
 		},
 
 		setErrorCallback: function(callback) {
-			if (_.isFunction(callback)) {
+			if (socket && _.isFunction(callback)) {
 				socket.onerror = callback;
+			} else {
+				socket.onerror = _.noop();
+			}
+		},
+
+		setReceiverCallback: function(callback) {
+			if (socket && _.isFunction(callback)) {
+				socket.onmessage = function(message) {
+					callback(message.data);
+				};
 			} else {
 				socket.onerror = _.noop();
 			}

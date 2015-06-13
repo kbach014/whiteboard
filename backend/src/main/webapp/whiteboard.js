@@ -13,6 +13,11 @@ angular.module('whiteboard').config(['$routeProvider', '$httpProvider', function
 		templateUrl: 'partials/registration.html'
 	});
 
+	$routeProvider.when('/myWhiteboards', {
+		controller: 'WhiteboardListCtrl',
+		templateUrl: 'partials/whiteboardList.html'
+	});
+
 	$routeProvider.when('/whiteboard/:id', {
 		controller: 'WhiteboardCtrl',
 		templateUrl: 'partials/whiteboard.html'
@@ -104,28 +109,64 @@ angular.module('whiteboard').controller('RegistrationCtrl', ['$scope', 'userServ
 angular.module('whiteboard').controller('WhiteboardCtrl', ['$scope', '$routeParams', 'whiteboardService', function($scope, $routeParams, whiteboardService) {
 	'use strict';
 
-	if ($routeParams.id) {
-		whiteboardService.connect($routeParams.id).then(function() {
-			$scope.successMessage = 'Connection established.';
-		}, function() {
-			$scope.errorMessage = 'Unable to connect to shared whiteboard.';
-		});
-	}
-
 	$scope.shapes = [];
 
 	$scope.shapetype = 'PATH';
 
-	$scope.updateShape = function(event) {
-		whiteboardService.scheduleDrawEvent(event);
-		var existingShape = _.findWhere($scope.shapes, {'uuid': event.shape.uuid});
+	var addOrUpdateShape = function(shape) {
+		console.log('updating shape', shape);
+		var existingShape = _.findWhere($scope.shapes, {'uuid': shape.uuid});
 		if (existingShape) {
 			// udpate
-			_.assign(existingShape, event.shape);
+			_.assign(existingShape, shape);
 		} else {
 			// add
-			$scope.shapes.push(event.shape);
+			$scope.shapes.push(shape);
 		}
+	};
+
+	if ($routeParams.id) {
+		whiteboardService.connect($routeParams.id).then(function() {
+			$scope.successMessage = 'Connection established.';
+			whiteboardService.setReceiverCallback(function(remoteDrawEvent) {
+				console.log('received', remoteDrawEvent);
+				addOrUpdateShape(remoteDrawEvent.shape);
+			});
+		}, function() {
+			$scope.errorMessage = 'Unable to connect to shared whiteboard.';
+		});
+	} else {
+		$scope.errorMessage = 'Ungültiges Whiteboard.';
+	}
+
+	$scope.onDraw = function(event) {
+		whiteboardService.scheduleDrawEvent(event);
+		addOrUpdateShape(event.shape);
+	};
+
+	$scope.dismissErrorMessage = function() {
+		$scope.errorMessage = null;
+	};
+
+	$scope.dismissSuccessMessage = function() {
+		$scope.successMessage = null;
+	};
+
+}]);
+;
+
+angular.module('whiteboard').controller('WhiteboardListCtrl', ['$scope', 'whiteboardsService', function($scope, whiteboardsService) {
+	'use strict';
+
+	$scope.whiteboards = [];
+
+	$scope.createWhiteboard = function() {
+		whiteboardsService.createWhiteboards().then(function(whiteboard) {
+			$scope.whiteboards.push(whiteboard);
+			$scope.successMessage = 'Whiteboard #' + whiteboard.id + ' angelegt';
+		}, function() {
+			$scope.errorMessage = 'Fehler beim Anlegen des Whiteboards.';
+		});
 	};
 
 	$scope.dismissErrorMessage = function() {
@@ -398,7 +439,6 @@ angular.module('whiteboard').factory('whiteboardService', ['$http', '$q', '$inte
 		if (socket && socket.readyState === WebSocket.OPEN && !_.isEmpty(eventQueue)) {
 			var toSend = eventQueue;
 			eventQueue = [];
-			console.log('SEND', toSend);
 			socket.send(JSON.stringify(toSend));
 		}
 	};
@@ -414,10 +454,6 @@ angular.module('whiteboard').factory('whiteboardService', ['$http', '$q', '$inte
 				deferred.reject();
 			};
 
-			socket.onmessage = function(event) {
-				console.log('RECEIVE', JSON.parse(event.data));
-			};
-
 			socket.onopen = function() {
 				socket.onerror = _.noop();
 				queueDrainer = $interval(drainQueue, 100, false);
@@ -428,8 +464,18 @@ angular.module('whiteboard').factory('whiteboardService', ['$http', '$q', '$inte
 		},
 
 		setErrorCallback: function(callback) {
-			if (_.isFunction(callback)) {
+			if (socket && _.isFunction(callback)) {
 				socket.onerror = callback;
+			} else {
+				socket.onerror = _.noop();
+			}
+		},
+
+		setReceiverCallback: function(callback) {
+			if (socket && _.isFunction(callback)) {
+				socket.onmessage = function(message) {
+					callback(message.data);
+				};
 			} else {
 				socket.onerror = _.noop();
 			}
@@ -447,6 +493,27 @@ angular.module('whiteboard').factory('whiteboardService', ['$http', '$q', '$inte
 			if (socket && socket.readyState === WebSocket.OPEN) {
 				socket.close();
 			}
+		}
+
+	};
+}]);
+;
+
+angular.module('whiteboard').factory('whiteboardsService', ['$http', '$q', function($http, $q) {
+	'use strict';
+
+	return {
+
+		findRegisteredWhiteboards: function() {
+			var deferred = $q.defer();
+			$http.get('/backend/rest/whiteboards/registered').success(deferred.resolve).error(deferred.reject);
+			return deferred.promise;
+		},
+
+		createWhiteboards: function() {
+			var deferred = $q.defer();
+			$http.post('/backend/rest/whiteboards', {}).success(deferred.resolve).error(deferred.reject);
+			return deferred.promise;
 		}
 
 	};

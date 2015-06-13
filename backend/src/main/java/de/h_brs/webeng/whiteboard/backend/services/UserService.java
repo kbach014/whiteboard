@@ -47,7 +47,12 @@ public class UserService {
 			final HttpSession session= req.getSession(true);
 			session.setAttribute("username", user.getUsername());
 			
-			return Response.ok().entity(user).build();
+			final UserDto result = new UserDto();
+			result.setUsername(user.getUsername());
+			result.setFirstname(user.getFirstname());
+			result.setLastname(user.getLastname());
+			
+			return Response.ok().entity(result).build();
 		}
 		catch(UserNotFoundException e) {
 			return Response.status(Status.UNAUTHORIZED).build();

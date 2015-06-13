@@ -14,29 +14,28 @@ import de.h_brs.webeng.whiteboard.backend.domain.*;
 
 public class RedisUserDAO implements UserDAO {
 	private static final String ALL_USERS = "users";
-	
+
 	public static final String FIELD_USERNAME = "username";
 	public static final String FIELD_FIRSTNAME = "firstname";
 	public static final String FIELD_LASTNAME = "lastname";
 	public static final String FIELD_PASSWORD = "password";
-	
+
 	private Jedis jedis = MyJedisPool.getPool("localhost").getResource();
 
 	@Override
 	public boolean updateUser(User user) throws UserNotFoundException {
-		if(userExists(user.getUsername())) {
-			String userKey = "user:"+user.getUsername();
-			
+		if (userExists(user.getUsername())) {
+			String userKey = "user:" + user.getUsername();
+
 			Transaction tx = jedis.multi();
 			tx.hset(userKey, FIELD_FIRSTNAME, user.getFirstname());
 			tx.hset(userKey, FIELD_LASTNAME, user.getLastname());
-			if(!user.getPassword().equals(""))
+			if (!user.getPassword().equals(""))
 				tx.hset(userKey, FIELD_PASSWORD, user.getPassword());
-			
+
 			tx.exec();
 			return true;
-		} 
-		else
+		} else
 			throw new UserNotFoundException();
 	}
 
@@ -45,174 +44,147 @@ public class RedisUserDAO implements UserDAO {
 		// TODO Not supported at the moment
 		return false;
 	}
-	
+
 	@Override
 	public User findUserByUsername(String username) throws UserNotFoundException {
-		//System.out.println("Trying to retrive User \""+username+"\n");
-		
-		if(userExists(username)) {
+		// System.out.println("Trying to retrive User \""+username+"\n");
+
+		if (userExists(username)) {
 			Map<String, String> properties = jedis.hgetAll("user:" + username);
-			//System.out.println("User \""+username+"\" was found!");
+			// System.out.println("User \""+username+"\" was found!");
 			User user = new User(username, properties.get("firstname"), properties.get("lastname"));
 			return user;
-		} 
-		else {
+		} else {
 			throw new UserNotFoundException(username);
 		}
 	}
 
-	
-	
-	
 	@Override
-	public List<User> findAllUsersFromWB(Whiteboard whiteboard) 
-			throws WhiteboardNotFoundException 
-	{
+	public List<User> findAllUsersFromWB(Whiteboard whiteboard) throws WhiteboardNotFoundException {
 		WhiteboardDAO wbDAO = new RedisWhiteboardDAO();
 		List<User> wbUsers = new ArrayList<User>();
-		
-		if(!wbDAO.whiteboardExists(whiteboard))
+
+		if (!wbDAO.whiteboardExists(whiteboard))
 			throw new WhiteboardNotFoundException();
-		
-		String wbUsernames = "whiteboard:"+whiteboard.getWbid()+":users";
-		
-		List<String> lst = jedis.sort(wbUsernames, 
-				new SortingParams().nosort().get("user:*->"+RedisUserDAO.FIELD_USERNAME, 
-						"user:*->"+RedisUserDAO.FIELD_FIRSTNAME,
-						"user:*->"+RedisUserDAO.FIELD_LASTNAME));
-		
-		if(!lst.isEmpty()) {
-			for(int x=0; x<lst.size(); x+=3) {
+
+		String wbUsernames = "whiteboard:" + whiteboard.getWbid() + ":users";
+
+		List<String> lst = jedis.sort(wbUsernames,
+				new SortingParams().nosort().get("user:*->" + RedisUserDAO.FIELD_USERNAME, "user:*->" + RedisUserDAO.FIELD_FIRSTNAME, "user:*->" + RedisUserDAO.FIELD_LASTNAME));
+
+		if (!lst.isEmpty()) {
+			for (int x = 0; x < lst.size(); x += 3) {
 				String username = lst.get(x);
-				String firstname = lst.get(x+1);
-				String lastname = lst.get(x+2);
-				
+				String firstname = lst.get(x + 1);
+				String lastname = lst.get(x + 2);
+
 				wbUsers.add(new User(username, firstname, lastname));
 			}
 		}
-		
+
 		return wbUsers;
 	}
-	
 
 	@Override
 	public void register(User user) throws UserAlreadyRegisteredException {
-		if(!userExists(user)) {
+		if (!userExists(user)) {
 			Transaction tx = jedis.multi();
-			
+
 			Map<String, String> userProperties = new HashMap<String, String>();
 			userProperties.put(FIELD_USERNAME, user.getUsername());
 			userProperties.put(FIELD_FIRSTNAME, user.getFirstname());
 			userProperties.put(FIELD_LASTNAME, user.getLastname());
 			userProperties.put(FIELD_PASSWORD, user.getPassword());
-			
+
 			tx.hmset("user:" + user.getUsername(), userProperties);
 			tx.sadd(ALL_USERS, user.getUsername());
 			tx.exec();
-		} 
-		else {
+		} else {
 			throw new UserAlreadyRegisteredException(user.getUsername());
 		}
 	}
 
 	@Override
-	public User login(String username, String password) 
-			throws UserNotFoundException, PasswordIncorrectException 
-	{
-		if(userExists(username)) {
-			String pw = jedis.hget("user:"+username, FIELD_PASSWORD);
-			
-			if(pw.equals(password)) {
-				String firstname = jedis.hget("user:"+username, FIELD_FIRSTNAME);
-				String lastname = jedis.hget("user:"+username, FIELD_LASTNAME);
-				
+	public User login(String username, String password) throws UserNotFoundException, PasswordIncorrectException {
+		if (userExists(username)) {
+			String pw = jedis.hget("user:" + username, FIELD_PASSWORD);
+
+			if (pw.equals(password)) {
+				String firstname = jedis.hget("user:" + username, FIELD_FIRSTNAME);
+				String lastname = jedis.hget("user:" + username, FIELD_LASTNAME);
+
 				User validUser = new User(username, firstname, lastname);
-				
+
 				return validUser;
-			} 
-			else
+			} else
 				throw new PasswordIncorrectException();
-		}
-		else
+		} else
 			throw new UserNotFoundException();
 	}
 
 	@Override
-	public void registerToWhiteboard(User user, Whiteboard whiteboard) 
-			throws UserNotFoundException, WhiteboardNotFoundException, UserWhiteboardException 
-	{
-		if(!userExists(user)) 
-			throw new UserNotFoundException(user);
-		
+	public void registerToWhiteboard(String username, Whiteboard whiteboard) throws UserNotFoundException, WhiteboardNotFoundException, UserWhiteboardException {
+		if (!userExists(username))
+			throw new UserNotFoundException(username);
+
 		WhiteboardDAO wbDAO = new RedisWhiteboardDAO();
-		if(!wbDAO.whiteboardExists(whiteboard))
+		if (!wbDAO.whiteboardExists(whiteboard))
 			throw new WhiteboardNotFoundException();
-		
+
 		// Key for Redis Set which contains all registered users for the whiteboard
 		String wbUsersKey = "whiteboard:" + whiteboard.getWbid() + ":users";
 		// Key for Redis Set which contains all whiteboards which a user is working on
-		String userWbsKey = "user:" + user.getUsername() + ":whiteboards";
+		String userWbsKey = "user:" + username + ":whiteboards";
 
 		// Is User already registered to Whiteboard?
-		if (!jedis.sismember(wbUsersKey, user.getUsername())) {
+		if (!jedis.sismember(wbUsersKey, username)) {
 			Transaction tx = jedis.multi();
-			tx.sadd(wbUsersKey, user.getUsername());
+			tx.sadd(wbUsersKey, username);
 			tx.sadd(userWbsKey, String.valueOf(whiteboard.getWbid()));
 			tx.exec();
 
-			//System.out.println(user.getUsername() + " was sucessfully registered for " + "whiteboad#" + whiteboard.getWbid());
-		} 
-		else {
-			throw new UserWhiteboardException(user, whiteboard);
+			// System.out.println(user.getUsername() + " was sucessfully registered for " + "whiteboad#" + whiteboard.getWbid());
+		} else {
+			throw new UserWhiteboardException(username, whiteboard);
 		}
 	}
-	
 
-	public boolean userHasWhiteboard(User user, Whiteboard whiteboard) 
-			throws UserNotFoundException, WhiteboardNotFoundException 
-	{
+	public boolean userHasWhiteboard(User user, Whiteboard whiteboard) throws UserNotFoundException, WhiteboardNotFoundException {
 		WhiteboardDAO wbDAO = new RedisWhiteboardDAO();
-		if(!userExists(user))
+		if (!userExists(user))
 			throw new UserNotFoundException();
-		if(!wbDAO.whiteboardExists(whiteboard))
+		if (!wbDAO.whiteboardExists(whiteboard))
 			throw new WhiteboardNotFoundException();
-		
-		
-		if(jedis.sismember("user:"+user.getUsername()+":whiteboards", String.valueOf(whiteboard.getWbid())))
+
+		if (jedis.sismember("user:" + user.getUsername() + ":whiteboards", String.valueOf(whiteboard.getWbid())))
 			return true;
-		else 
+		else
 			return false;
 	}
-	
-	public boolean userHasWhiteboard(String username, Long wbID) 
-			throws UserNotFoundException, WhiteboardNotFoundException 
-	{
+
+	public boolean userHasWhiteboard(String username, Long wbID) throws UserNotFoundException, WhiteboardNotFoundException {
 		WhiteboardDAO wbDAO = new RedisWhiteboardDAO();
-		if(!userExists(username))
+		if (!userExists(username))
 			throw new UserNotFoundException();
-		if(!wbDAO.whiteboardExists(String.valueOf(wbID)))
+		if (!wbDAO.whiteboardExists(String.valueOf(wbID)))
 			throw new WhiteboardNotFoundException();
-		
-		
-		if(jedis.sismember("user:"+username+":whiteboards", String.valueOf(wbID)))
+
+		if (jedis.sismember("user:" + username + ":whiteboards", String.valueOf(wbID)))
 			return true;
-		else 
+		else
 			return false;
 	}
-	
+
 	public boolean userExists(String username) {
-		if(jedis.sismember(ALL_USERS, username)) {
+		if (jedis.sismember(ALL_USERS, username)) {
 			return true;
-		} 
-		else {
+		} else {
 			return false;
 		}
 	}
-	
+
 	public boolean userExists(User user) {
 		return userExists(user.getUsername());
 	}
-	
-	
 
 }

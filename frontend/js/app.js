@@ -13,6 +13,11 @@ angular.module('whiteboard').config(['$routeProvider', '$httpProvider', function
 		templateUrl: 'partials/registration.html'
 	});
 
+	$routeProvider.when('/myWhiteboards', {
+		controller: 'WhiteboardListCtrl',
+		templateUrl: 'partials/whiteboardList.html'
+	});
+
 	$routeProvider.when('/whiteboard/:id', {
 		controller: 'WhiteboardCtrl',
 		templateUrl: 'partials/whiteboard.html'

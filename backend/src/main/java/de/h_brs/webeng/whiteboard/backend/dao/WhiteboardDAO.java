@@ -7,7 +7,7 @@ import de.h_brs.webeng.whiteboard.backend.domain.User;
 import de.h_brs.webeng.whiteboard.backend.domain.Whiteboard;
 
 public interface WhiteboardDAO {
-	Whiteboard insertWhiteboard(User creator) throws UserNotFoundException;
+	Whiteboard insertWhiteboard(String creatorName) throws UserNotFoundException;
 
     boolean updateWhiteboard(Whiteboard whiteboard);
 
@@ -17,7 +17,7 @@ public interface WhiteboardDAO {
 
     List<Whiteboard> findWhiteboards(int start, int count);
 
-	List<Whiteboard> findRegisteredWhiteboards(User user) throws UserNotFoundException;
+	List<Whiteboard> findRegisteredWhiteboards(String username) throws UserNotFoundException;
 	
 	List<Whiteboard> findUnregisteredWhiteboards(User user, int start, int count) throws UserNotFoundException;
 	

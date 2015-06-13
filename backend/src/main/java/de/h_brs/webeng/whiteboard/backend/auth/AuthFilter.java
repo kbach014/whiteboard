@@ -38,7 +38,7 @@ public final class AuthFilter implements Filter{
 	private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) 
 			throws IOException, ServletException 
 	{
-		
+		chain.doFilter(request, response);
 	}
 
 	@Override
