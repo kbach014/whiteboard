@@ -21,8 +21,8 @@ import de.h_brs.webeng.whiteboard.backend.dao.exception.UserNotFoundException;
 import de.h_brs.webeng.whiteboard.backend.dao.exception.WhiteboardNotFoundException;
 import de.h_brs.webeng.whiteboard.backend.dao.impl.RedisUserDAO;
 
-@WebFilter(filterName = "whiteboardOutFilter", urlPatterns = {"/drawings/*"})
-public class WhiteboardOutFilter implements Filter  {
+@WebFilter(filterName = "whiteboardAuthFilter", urlPatterns = {"/drawings/*"})
+public class WhiteboardAuthFilter implements Filter  {
 
 	private static final Logger LOG = LoggerFactory.getLogger(DrawingEndpoint.class);
 	private final String URL_PREFIX = "/backend/drawings/";
@@ -55,7 +55,7 @@ public class WhiteboardOutFilter implements Filter  {
 			if(userIsValid(username)) {
 				try {
 					if(userHasAccessToWhiteboard(username, wbID)) {
-						
+						chain.doFilter(new AuthenticatedRequest(request, username), response);
 					} 
 					else {
 						LOG.info("User "+username+" has no access to whiteboard#"+wbID);
@@ -64,13 +64,9 @@ public class WhiteboardOutFilter implements Filter  {
 				}
 				catch(UserNotFoundException e) {}
 				catch(WhiteboardNotFoundException e) {
-					// TODO in diesem Fall baut er trotzdem eine Socketverbindung auf, da aber das WB nicht gefunden werden kann
-					// muss dies unterbunden werden
 					LOG.error("Whiteboard#"+wbID+" cannot be found!");
 					response.sendError(HttpServletResponse.SC_NOT_FOUND);
 				}
-				
-				chain.doFilter(new AuthenticatedRequest(request, username), response);
 			} 
 			else {
 				LOG.error(username+" is NOT valid user!");
