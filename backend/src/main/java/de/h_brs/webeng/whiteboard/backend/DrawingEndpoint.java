@@ -39,7 +39,7 @@ public class DrawingEndpoint {
 	public void onOpen(Session session, @PathParam("id") Long whiteboardId) {
 		LOG.info("Connected session " + session.getId() + " for user " + session.getUserPrincipal().getName() + " to whiteboard " + whiteboardId);
 
-		final ActorRef ref = SYSTEM.actorOf(Props.create(RemoteEndpointSender.class, session.getAsyncRemote()), session.getId());
+		final ActorRef ref = SYSTEM.actorOf(Props.create(RemoteEndpointSender.class, session.getAsyncRemote()), "upstream_" + session.getId());
 		getHandlerForWhiteboard(whiteboardId).tell(new HelloMessage(session.getId()), ref);
 		session.getUserProperties().put("sender", ref);
 	}
@@ -57,7 +57,11 @@ public class DrawingEndpoint {
 	public void onError(Throwable t, Session session) {
 		try {
 			if (session.isOpen()) {
-				session.close(new CloseReason(CloseCodes.UNEXPECTED_CONDITION, t.getMessage()));
+				try {
+					session.close(new CloseReason(CloseCodes.UNEXPECTED_CONDITION, t.getMessage()));
+				} catch (IllegalStateException e) {
+					LOG.warn("Closing session failed: " + e.getMessage());
+				}
 			}
 		} catch (IOException e) {
 			LOG.error("Error during exception handling.", e);
@@ -70,7 +74,7 @@ public class DrawingEndpoint {
 		if (ref != null) {
 			getHandlerForWhiteboard(whiteboardId).tell(new GoodbyeMessage(session.getId()), ref);
 		}
-		LOG.info(String.format("Session %s closed because of %s", session.getId(), closeReason));
+		LOG.debug(String.format("Session %s closed because of %s", session.getId(), closeReason));
 	}
 
 	/**
@@ -81,8 +85,7 @@ public class DrawingEndpoint {
 	 * @return Non-null actor (creates new actor, if not yet existing).
 	 */
 	private ActorRef getHandlerForWhiteboard(Long whiteboardId) {
-		WHITEBOARD_HANDLERS.computeIfAbsent(whiteboardId, this::createWhiteboardHandler);
-		return WHITEBOARD_HANDLERS.get(whiteboardId);
+		return WHITEBOARD_HANDLERS.computeIfAbsent(whiteboardId, this::createWhiteboardHandler);
 	}
 
 	/**
@@ -93,7 +96,7 @@ public class DrawingEndpoint {
 	 * @return new adapter for the given whiteboardId
 	 */
 	private ActorRef createWhiteboardHandler(Long whiteboardId) {
-		return SYSTEM.actorOf(Props.create(WhiteboardHandler.class, whiteboardId), String.valueOf(whiteboardId));
+		return SYSTEM.actorOf(Props.create(WhiteboardHandler.class, whiteboardId), "whiteboard_" + String.valueOf(whiteboardId));
 	}
 
 }
