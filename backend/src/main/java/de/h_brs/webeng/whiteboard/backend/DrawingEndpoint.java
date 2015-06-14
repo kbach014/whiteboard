@@ -4,9 +4,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
 
-import javax.annotation.PreDestroy;
 import javax.websocket.CloseReason;
 import javax.websocket.CloseReason.CloseCodes;
 import javax.websocket.OnClose;
@@ -20,7 +18,6 @@ import javax.websocket.server.ServerEndpoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import scala.concurrent.duration.Duration;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
@@ -35,17 +32,16 @@ public class DrawingEndpoint {
 
 	private static final Logger LOG = LoggerFactory.getLogger(DrawingEndpoint.class);
 
-	private final ActorSystem system = ActorSystem.create("DrawingSystem");
-	private final ConcurrentMap<Long, ActorRef> whiteboardHandlers = new ConcurrentHashMap<>();
+	private static final ActorSystem SYSTEM = ActorSystem.create("DrawingSystem");
+	private static final ConcurrentMap<Long, ActorRef> WHITEBOARD_HANDLERS = new ConcurrentHashMap<>();
 
 	@OnOpen
 	public void onOpen(Session session, @PathParam("id") Long whiteboardId) {
 		LOG.info("Connected session " + session.getId() + " for user " + session.getUserPrincipal().getName() + " to whiteboard " + whiteboardId);
-		
-		final ActorRef ref = system.actorOf(Props.create(RemoteEndpointSender.class, session.getAsyncRemote()), session.getId());
+
+		final ActorRef ref = SYSTEM.actorOf(Props.create(RemoteEndpointSender.class, session.getAsyncRemote()), session.getId());
 		getHandlerForWhiteboard(whiteboardId).tell(new HelloMessage(session.getId()), ref);
 		session.getUserProperties().put("sender", ref);
-		
 	}
 
 	@OnMessage
@@ -77,12 +73,6 @@ public class DrawingEndpoint {
 		LOG.info(String.format("Session %s closed because of %s", session.getId(), closeReason));
 	}
 
-	@PreDestroy
-	private void shutdown() {
-		system.shutdown();
-		system.awaitTermination(Duration.create(15, TimeUnit.SECONDS));
-	}
-
 	/**
 	 * Atomically gets the actor in charge of handling messages for a given whiteboard.
 	 * 
@@ -91,8 +81,8 @@ public class DrawingEndpoint {
 	 * @return Non-null actor (creates new actor, if not yet existing).
 	 */
 	private ActorRef getHandlerForWhiteboard(Long whiteboardId) {
-		whiteboardHandlers.computeIfAbsent(whiteboardId, this::createWhiteboardHandler);
-		return whiteboardHandlers.get(whiteboardId);
+		WHITEBOARD_HANDLERS.computeIfAbsent(whiteboardId, this::createWhiteboardHandler);
+		return WHITEBOARD_HANDLERS.get(whiteboardId);
 	}
 
 	/**
@@ -103,7 +93,7 @@ public class DrawingEndpoint {
 	 * @return new adapter for the given whiteboardId
 	 */
 	private ActorRef createWhiteboardHandler(Long whiteboardId) {
-		return system.actorOf(Props.create(WhiteboardHandler.class, whiteboardId), String.valueOf(whiteboardId));
+		return SYSTEM.actorOf(Props.create(WhiteboardHandler.class, whiteboardId), String.valueOf(whiteboardId));
 	}
 
 }

@@ -1,4 +1,4 @@
-angular.module('whiteboard').controller('WhiteboardListCtrl', ['$scope', 'whiteboardsService', function($scope, whiteboardsService) {
+angular.module('whiteboard').controller('WhiteboardListCtrl', ['$scope', '$location', 'whiteboardsService', function($scope, $location, whiteboardsService) {
 	'use strict';
 
 	$scope.whiteboards = [];
@@ -10,6 +10,10 @@ angular.module('whiteboard').controller('WhiteboardListCtrl', ['$scope', 'whiteb
 		}, function() {
 			$scope.errorMessage = 'Fehler beim Anlegen des Whiteboards.';
 		});
+	};
+
+	$scope.join = function(whiteboardId) {
+		$location.url('/whiteboard/' + whiteboardId);
 	};
 
 	$scope.dismissErrorMessage = function() {

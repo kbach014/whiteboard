@@ -43,7 +43,7 @@ angular.module('whiteboard').factory('whiteboardService', ['$http', '$q', '$inte
 		setReceiverCallback: function(callback) {
 			if (socket && _.isFunction(callback)) {
 				socket.onmessage = function(message) {
-					callback(message.data);
+					callback(JSON.parse(message.data));
 				};
 			} else {
 				socket.onerror = _.noop();

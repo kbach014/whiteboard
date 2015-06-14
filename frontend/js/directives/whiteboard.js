@@ -67,7 +67,6 @@ angular.module('whiteboard').directive('whiteboardShapes', ['$interval', 'uuidSe
       $element.on('mousedown', function(e) {
         var x = e.offsetX || e.pageX - $element.offset().left;
         var y = e.offsetY || e.pageY - $element.offset().top;
-        console.log('mousedown', x, y);
         switch($scope.shapeType) {
           case 'PATH':
             transientShape = {uuid: uuidService.generateUUID(), type: 'PATH', finished: false, points: [{x: x, y: y}]};

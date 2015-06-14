@@ -15,6 +15,7 @@
     <tr>
       <th>ID</th>
       <th>Ersteller</th>
+      <th>Aktion</th>
     </tr>
   </thead>
 
@@ -22,12 +23,13 @@
     <tr data-ng-repeat="wb in whiteboards">
       <td>{{wb.id}}</td>
       <td>{{wb.creator}}</td>
+      <td><button class="btn btn-default" data-ng-click="join(wb.id)">Öffnen</button></td>
     </tr>
   </tbody>
 
   <tfoot>
     <tr>
-      <td colspan="2"><button class="btn btn-default" data-ng-click="createWhiteboard()">Neues Whiteboard anlegen</button></td>
+      <td colspan="3"><button class="btn btn-default" data-ng-click="createWhiteboard()">Neues Whiteboard anlegen</button></td>
     </tr>
   </tfoot>
 </table>

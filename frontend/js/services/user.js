@@ -10,6 +10,11 @@ angular.module('whiteboard').factory('userService', ['$http', '$q', function($ht
 	};
 
 	var currentUser = null;
+	
+	$http.get('/backend/rest/users/whoami').success(function(user) {
+		currentUser = user;
+		notifyLoginLogoutObservers();
+	});
 
 	return {
 

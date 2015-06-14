@@ -27,6 +27,7 @@ public class WhiteboardHandler extends UntypedActor {
 	private Map<String, Color> sessionColors = new HashMap<>();
 	
 	public WhiteboardHandler(Long whiteboardId) {
+		LOG.info("initialized whiteboard handler #{}: ", whiteboardId, this);
 		this.whiteboardId = whiteboardId;
 	}
 
@@ -40,12 +41,12 @@ public class WhiteboardHandler extends UntypedActor {
 			final Color myColor = Color.values()[sessionColors.size() % Color.values().length];
 			sessionColors.put(hello.getSessionId(), myColor);
 			upstreamRouter = upstreamRouter.addRoutee(getSender());
-			LOG.debug("added receiver to whiteboard {}", whiteboardId);
+			LOG.debug("added receiver {} to whiteboard {}", hello.getSessionId(), whiteboardId);
 		} else if (message instanceof GoodbyeMessage) {
 			final GoodbyeMessage goodbye = (GoodbyeMessage) message;
 			sessionColors.remove(goodbye.getSessionId());
 			upstreamRouter = upstreamRouter.removeRoutee(getSender());
-			LOG.debug("removed receiver to whiteboard {}", whiteboardId);
+			LOG.debug("removed receiver {} from whiteboard {}", goodbye.getSessionId(), whiteboardId);
 		} else {
 			unhandled(message);
 		}
@@ -66,6 +67,7 @@ public class WhiteboardHandler extends UntypedActor {
 			}
 			// TODO restliche Shapes überprüfen
 		}
+		LOG.debug("sending event on whiteboard {} to {} receivers", whiteboardId, sessionColors.size());
 		upstreamRouter.route(event, getSelf());
 	}
 
