@@ -6,5 +6,5 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class GoodbyeMessage {
-	private String sessionId;
+	private String username;
 }

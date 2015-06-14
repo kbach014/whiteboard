@@ -21,7 +21,7 @@ public class DrawEventDto implements Serializable {
 	private EventType type;
 	private ShapeDto shape;
 	@XmlTransient
-	private String sessionId;
+	private String username;
 
 	@XmlEnum(String.class)
 	public enum EventType {

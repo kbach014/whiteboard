@@ -40,7 +40,7 @@ public class DrawingEndpoint {
 		LOG.info("Connected session " + session.getId() + " for user " + session.getUserPrincipal().getName() + " to whiteboard " + whiteboardId);
 
 		final ActorRef ref = SYSTEM.actorOf(Props.create(RemoteEndpointSender.class, session.getAsyncRemote()), "upstream_" + session.getId());
-		getHandlerForWhiteboard(whiteboardId).tell(new HelloMessage(session.getId()), ref);
+		getHandlerForWhiteboard(whiteboardId).tell(new HelloMessage(session.getUserPrincipal().getName()), ref);
 		session.getUserProperties().put("sender", ref);
 	}
 
@@ -48,7 +48,7 @@ public class DrawingEndpoint {
 	public void processDrawEvent(Collection<DrawEventDto> events, Session session, @PathParam("id") Long whiteboardId) throws IOException {
 		final ActorRef handler = getHandlerForWhiteboard(whiteboardId);
 		events.forEach(event -> {
-			event.setSessionId(session.getId());
+			event.setUsername(session.getUserPrincipal().getName());
 			handler.tell(event, ActorRef.noSender());
 		});
 	}
@@ -72,7 +72,7 @@ public class DrawingEndpoint {
 	public void onClose(Session session, CloseReason closeReason, @PathParam("id") Long whiteboardId) {
 		final ActorRef ref = (ActorRef) session.getUserProperties().remove("sender");
 		if (ref != null) {
-			getHandlerForWhiteboard(whiteboardId).tell(new GoodbyeMessage(session.getId()), ref);
+			getHandlerForWhiteboard(whiteboardId).tell(new GoodbyeMessage(session.getUserPrincipal().getName()), ref);
 		}
 		LOG.debug(String.format("Session %s closed because of %s", session.getId(), closeReason));
 	}
