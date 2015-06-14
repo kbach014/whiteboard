@@ -42,9 +42,7 @@ public class WhiteboardAuthFilter implements Filter {
 	}
 
 	private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException {
-		// TODO remove Hardcoding
-		request.getSession().setAttribute("username", "sebi");
-
+		
 		if (request.getSession().getAttribute("username") != null) {
 			String username = request.getSession().getAttribute("username").toString();
 			String url = request.getRequestURI();

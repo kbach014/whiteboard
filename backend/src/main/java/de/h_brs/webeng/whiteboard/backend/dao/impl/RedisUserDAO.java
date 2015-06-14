@@ -71,8 +71,10 @@ public class RedisUserDAO implements UserDAO {
 		RedisWhiteboardDAO wbDAO = new RedisWhiteboardDAO();
 		List<User> wbUsers = new ArrayList<User>();
 
-		if (!wbDAO.whiteboardExists(whiteboard, jedis))
+		if (!wbDAO.whiteboardExists(whiteboard, jedis)) {
+			jedis.close();
 			throw new WhiteboardNotFoundException();
+		}
 
 		String wbUsernames = "whiteboard:" + whiteboard.getWbid() + ":users";
 
@@ -142,12 +144,16 @@ public class RedisUserDAO implements UserDAO {
 	@Override
 	public void registerToWhiteboard(String username, Whiteboard whiteboard) throws UserNotFoundException, WhiteboardNotFoundException, UserWhiteboardException {
 		Jedis jedis = MyJedisPool.getPool("localhost").getResource();
-		if (!userExists(username, jedis))
+		if (!userExists(username, jedis)) {
+			jedis.close();
 			throw new UserNotFoundException(username);
+		}
 
 		RedisWhiteboardDAO wbDAO = new RedisWhiteboardDAO();
-		if (!wbDAO.whiteboardExists(whiteboard, jedis))
+		if (!wbDAO.whiteboardExists(whiteboard, jedis)) {
+			jedis.close();
 			throw new WhiteboardNotFoundException();
+		}
 
 		// Key for Redis Set which contains all registered users for the whiteboard
 		String wbUsersKey = "whiteboard:" + whiteboard.getWbid() + ":users";
@@ -182,6 +188,7 @@ public class RedisUserDAO implements UserDAO {
 		}
 
 		if (jedis.sismember("user:" + user.getUsername() + ":whiteboards", String.valueOf(whiteboard.getWbid()))) {
+			jedis.close();
 			return true;
 		}
 		else {
@@ -193,11 +200,14 @@ public class RedisUserDAO implements UserDAO {
 	public boolean userHasWhiteboard(String username, Long wbID) throws UserNotFoundException, WhiteboardNotFoundException {
 		Jedis jedis = MyJedisPool.getPool("localhost").getResource();
 		RedisWhiteboardDAO wbDAO = new RedisWhiteboardDAO();
-		if (!userExists(username, jedis))
+		if (!userExists(username, jedis)) {
+			jedis.close();
 			throw new UserNotFoundException();
-		if (!wbDAO.whiteboardExists(String.valueOf(wbID), jedis))
+		}
+		if (!wbDAO.whiteboardExists(String.valueOf(wbID), jedis)) {
+			jedis.close();
 			throw new WhiteboardNotFoundException();
-
+		}
 		if (jedis.sismember("user:" + username + ":whiteboards", String.valueOf(wbID))) {
 			jedis.close();
 			return true;

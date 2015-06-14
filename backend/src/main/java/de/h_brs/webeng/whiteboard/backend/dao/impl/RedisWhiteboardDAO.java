@@ -193,6 +193,7 @@ public class RedisWhiteboardDAO implements WhiteboardDAO {
 		Jedis jedis = MyJedisPool.getPool("localhost").getResource();
 		UserDAO userDAO = new RedisUserDAO();
 		if(!userDAO.userExists(user)) {
+			jedis.close();
 			throw new UserNotFoundException();
 		}
 		// Fetch the latest X whiteboards
