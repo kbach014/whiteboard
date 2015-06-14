@@ -15,8 +15,6 @@ import de.h_brs.webeng.whiteboard.backend.domain.*;
 
 
 public class RedisWhiteboardDAO implements WhiteboardDAO {
-	private Jedis jedis = MyJedisPool.getPool("localhost").getResource();
-	
 	private final String ALL_WHITEBOARDS = "whiteboards";
 	
 	public final int PUBLIC  = 0;
@@ -30,6 +28,8 @@ public class RedisWhiteboardDAO implements WhiteboardDAO {
 	 */
 	@Override
 	public Whiteboard insertWhiteboard(String creatorName) throws UserNotFoundException {
+		Jedis jedis = MyJedisPool.getPool("localhost").getResource();
+		
 		if(creatorName != null) {
 			UserDAO userDAO = new RedisUserDAO();
 			
@@ -55,15 +55,21 @@ public class RedisWhiteboardDAO implements WhiteboardDAO {
 				
 				tx.exec();
 				
+				jedis.close();
+				
 				Whiteboard wb = new Whiteboard(wbid, creatorName);
 				
 				return wb;
 			}
-			else
+			else {
+				jedis.close();
 				throw new UserNotFoundException();
+			}
 		}
-		else
+		else {
+			jedis.close();
 			throw new UserNotFoundException();
+		}
 	}
 
 	@Override
@@ -90,6 +96,7 @@ public class RedisWhiteboardDAO implements WhiteboardDAO {
 	@Override
 	public Whiteboard findWhiteboardByID(long wbid) throws WhiteboardNotFoundException {
 		//System.out.println("Trying to retrive Whiteboard#"+wbid+"\n");
+		Jedis jedis = MyJedisPool.getPool("localhost").getResource();
 		
 		if(jedis.sismember(ALL_WHITEBOARDS, String.valueOf(wbid))) {
 			Map<String, String> properties = jedis.hgetAll("whiteboard:"+wbid);
@@ -98,11 +105,14 @@ public class RedisWhiteboardDAO implements WhiteboardDAO {
 			String creatorUserName = properties.get("creator");
 			
 			Whiteboard wb = new Whiteboard(wbid, creatorUserName);
+			jedis.close();
 			
 			return wb;
 		} 
-		else
+		else {
+			jedis.close();
 			throw new WhiteboardNotFoundException(wbid);
+		}
 	}
 	
 	/**
@@ -113,6 +123,7 @@ public class RedisWhiteboardDAO implements WhiteboardDAO {
 	 */
 	@Override
 	public List<Whiteboard> findWhiteboards(int start, int count) {
+		Jedis jedis = MyJedisPool.getPool("localhost").getResource();
 		List<String> lst = jedis.sort("whiteboards", 
 				new SortingParams().limit(start, count).get("whiteboard:*->wbid", "whiteboard:*->creator"));
 		List<Whiteboard> allWhiteboards = new ArrayList<Whiteboard>();
@@ -127,6 +138,7 @@ public class RedisWhiteboardDAO implements WhiteboardDAO {
 			}
 		}
 
+		jedis.close();
 		return allWhiteboards;
 	}
 	
@@ -138,6 +150,7 @@ public class RedisWhiteboardDAO implements WhiteboardDAO {
 	 */
 	@Override
 	public List<Whiteboard> findRegisteredWhiteboards(String username) throws UserNotFoundException {
+		Jedis jedis = MyJedisPool.getPool("localhost").getResource();
 		List<Whiteboard> userWhiteboards = new ArrayList<Whiteboard>();
 		
 		UserDAO userDAO = new RedisUserDAO();
@@ -156,8 +169,11 @@ public class RedisWhiteboardDAO implements WhiteboardDAO {
 			}
 		} 
 		else {
+			jedis.close();
 			throw new UserNotFoundException();
 		}
+		
+		jedis.close();
 		return userWhiteboards;
 	}
 	
@@ -174,6 +190,7 @@ public class RedisWhiteboardDAO implements WhiteboardDAO {
 	 */
 	@SuppressWarnings("unchecked")
 	public List<Whiteboard> findUnregisteredWhiteboards(User user, int start, int count) throws UserNotFoundException {
+		Jedis jedis = MyJedisPool.getPool("localhost").getResource();
 		UserDAO userDAO = new RedisUserDAO();
 		if(!userDAO.userExists(user)) {
 			throw new UserNotFoundException();
@@ -209,6 +226,8 @@ public class RedisWhiteboardDAO implements WhiteboardDAO {
 		}
 		
 		// TODO Find the rest
+		
+		jedis.close();
 		return unregisteredWhiteboards;
 	}
 	
@@ -227,13 +246,34 @@ public class RedisWhiteboardDAO implements WhiteboardDAO {
 	}
 	
 	public boolean whiteboardExists(String wbid) {
-		if(jedis.sismember(ALL_WHITEBOARDS, wbid))
+		Jedis jedis = MyJedisPool.getPool("localhost").getResource();
+		if(jedis.sismember(ALL_WHITEBOARDS, wbid)) {
+			jedis.close();
 			return true;
-		else
+		}
+		else {
+			jedis.close();
 			return false;
+		}
 	}
 	
 	public boolean whiteboardExists(Whiteboard whiteboard) {
 		return whiteboardExists(String.valueOf(whiteboard.getWbid()));
+	}
+	
+	public boolean whiteboardExists(String wbid, Jedis jedis) {
+		jedis = MyJedisPool.getPool("localhost").getResource();
+		if(jedis.sismember(ALL_WHITEBOARDS, wbid)) {
+			jedis.close();
+			return true;
+		}
+		else {
+			jedis.close();
+			return false;
+		}
+	}
+	
+	public boolean whiteboardExists(Whiteboard whiteboard, Jedis jedis) {
+		return whiteboardExists(String.valueOf(whiteboard.getWbid()), jedis);
 	}
 }
