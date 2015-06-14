@@ -1,11 +1,15 @@
 angular.module('whiteboard').controller('WhiteboardListCtrl', ['$scope', '$location', 'whiteboardsService', function($scope, $location, whiteboardsService) {
 	'use strict';
 
-	$scope.whiteboards = [];
+	$scope.registeredWhiteboards = [];
+
+	whiteboardsService.findRegisteredWhiteboards().then(function(whiteboards) {
+		$scope.registeredWhiteboards = whiteboards;
+	});
 
 	$scope.createWhiteboard = function() {
 		whiteboardsService.createWhiteboards().then(function(whiteboard) {
-			$scope.whiteboards.push(whiteboard);
+			$scope.registeredWhiteboards.push(whiteboard);
 			$scope.successMessage = 'Whiteboard #' + whiteboard.id + ' angelegt';
 		}, function() {
 			$scope.errorMessage = 'Fehler beim Anlegen des Whiteboards.';

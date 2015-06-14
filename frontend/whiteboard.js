@@ -3,6 +3,11 @@ angular.module('whiteboard', ['ngRoute']);
 angular.module('whiteboard').config(['$routeProvider', '$httpProvider', function($routeProvider) {
 	'use strict';
 
+	$routeProvider.when('/home', {
+		controller: 'HomeCtrl',
+		templateUrl: 'partials/home.html'
+	});
+
 	$routeProvider.when('/login', {
 		controller: 'LoginCtrl',
 		templateUrl: 'partials/login.html'
@@ -24,7 +29,7 @@ angular.module('whiteboard').config(['$routeProvider', '$httpProvider', function
 	});
 
 	$routeProvider.otherwise({
-		redirectTo: '/whiteboard/2'
+		redirectTo: '/home'
 	});
 
 }]);
@@ -45,6 +50,9 @@ angular.module('whiteboard').run(['$location', '$rootScope', 'userService', func
 	$rootScope.currentUser = userService.getCurrentUser();
 
 }]);
+;
+
+angular.module('whiteboard').controller('HomeCtrl', [function() {}]);
 ;
 
 angular.module('whiteboard').controller('LoginCtrl', ['$scope', 'userService', function($scope, userService) {
@@ -158,11 +166,15 @@ angular.module('whiteboard').controller('WhiteboardCtrl', ['$scope', '$routePara
 angular.module('whiteboard').controller('WhiteboardListCtrl', ['$scope', '$location', 'whiteboardsService', function($scope, $location, whiteboardsService) {
 	'use strict';
 
-	$scope.whiteboards = [];
+	$scope.registeredWhiteboards = [];
+
+	whiteboardsService.findRegisteredWhiteboards().then(function(whiteboards) {
+		$scope.registeredWhiteboards = whiteboards;
+	});
 
 	$scope.createWhiteboard = function() {
 		whiteboardsService.createWhiteboards().then(function(whiteboard) {
-			$scope.whiteboards.push(whiteboard);
+			$scope.registeredWhiteboards.push(whiteboard);
 			$scope.successMessage = 'Whiteboard #' + whiteboard.id + ' angelegt';
 		}, function() {
 			$scope.errorMessage = 'Fehler beim Anlegen des Whiteboards.';

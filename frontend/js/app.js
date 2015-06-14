@@ -3,6 +3,11 @@ angular.module('whiteboard', ['ngRoute']);
 angular.module('whiteboard').config(['$routeProvider', '$httpProvider', function($routeProvider) {
 	'use strict';
 
+	$routeProvider.when('/home', {
+		controller: 'HomeCtrl',
+		templateUrl: 'partials/home.html'
+	});
+
 	$routeProvider.when('/login', {
 		controller: 'LoginCtrl',
 		templateUrl: 'partials/login.html'
@@ -24,7 +29,7 @@ angular.module('whiteboard').config(['$routeProvider', '$httpProvider', function
 	});
 
 	$routeProvider.otherwise({
-		redirectTo: '/whiteboard/2'
+		redirectTo: '/home'
 	});
 
 }]);
