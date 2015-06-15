@@ -14,6 +14,7 @@ import akka.routing.Router;
 import de.h_brs.webeng.whiteboard.backend.dao.ShapeDAO;
 import de.h_brs.webeng.whiteboard.backend.dao.impl.RedisShapeDAO;
 import de.h_brs.webeng.whiteboard.backend.domain.Color;
+import de.h_brs.webeng.whiteboard.backend.domain.Path;
 import de.h_brs.webeng.whiteboard.backend.domain.Rectangle;
 import de.h_brs.webeng.whiteboard.backend.domain.ShapeType;
 import de.h_brs.webeng.whiteboard.backend.dto.DrawEventDto;
@@ -82,17 +83,19 @@ public class WhiteboardHandler extends UntypedActor {
 	private void onReceiveDrawEvent(DrawEventDto event) throws Exception {
 		event.getShape().setColor(getColorForUser(event.getUsername()));
 		if (event.getType().equals(EventType.FINISH)) {
-			if(event.getShape().getType() == ShapeType.RECT) {
+			if(event.getShape().getType().equals(ShapeType.RECT)) {
 				ShapeDto shapeDto = event.getShape();
 				
-				// TODO Kacke, an dieser Stelle brauchen wir doch den User, denn sonst weiß das Shape 
-				// nicht von dem es gezeichnet wrude
-				// Am besten durch das DrawEventDto gekapselt übergeben..
-				
-				// Bittesehr: event.getUsername() ;-)
-				Rectangle rect = new Rectangle("", String.valueOf(whiteboardId), shapeDto.getP1(), shapeDto.getP2());
+				Rectangle rect = new Rectangle(event.getUsername(), String.valueOf(whiteboardId), shapeDto.getP1(), shapeDto.getP2());
 				ShapeDAO shapeDAO = new RedisShapeDAO(); 
-				//shapeDAO.insertRect(rect);
+				shapeDAO.insertRect(rect);
+			}
+			else if(event.getShape().getType().equals(ShapeType.PATH)) {
+				ShapeDto shapeDto = event.getShape();
+				
+				Path path = new Path(event.getUsername(), String.valueOf(whiteboardId), shapeDto.getPoints());
+				ShapeDAO shapeDAO = new RedisShapeDAO(); 
+				shapeDAO.insertPath(path);
 			}
 			// TODO restliche Shapes überprüfen
 		}

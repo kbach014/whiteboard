@@ -15,15 +15,13 @@ import de.h_brs.webeng.whiteboard.backend.domain.*;
 import de.h_brs.webeng.whiteboard.backend.dao.exception.*;
 
 public class RedisShapeDAO implements ShapeDAO {
-
-	// private Jedis jedis = MyJedisPool.getPool("localhost").getResource();
-
 	public static final String FIELD_POS_X1 = "x1";
 	public static final String FIELD_POS_Y1 = "y1";
 	public static final String FIELD_POS_X2 = "x2";
 	public static final String FIELD_POS_Y2 = "y2";
-	public static final String FIELD_CIRCLE_RADIUS = "r";
-	public static final String FIELD_SHAPE_TYPE = "type";
+	public static final String FIELD_PATH_POINTS 	= "points";
+	public static final String FIELD_CIRCLE_RADIUS 	= "r";
+	public static final String FIELD_SHAPE_TYPE 	= "type";
 
 	/**
 	 * Inserts a new Rectangle-Instance to the database. NOTE: A shape in general can only be inserted if it belongs to a Whiteboard and an Artist (User). Therefore Shape-Instance must provide these information,
@@ -47,7 +45,7 @@ public class RedisShapeDAO implements ShapeDAO {
 				rectProperties.put(FIELD_POS_X2, String.valueOf(rect.getP2().getX()));
 				rectProperties.put(FIELD_POS_Y2, String.valueOf(rect.getP2().getY()));
 
-				rectProperties.put(FIELD_SHAPE_TYPE, String.valueOf("r"));
+				rectProperties.put(FIELD_SHAPE_TYPE, "r");
 
 				tx.hmset(rect.getShapeKey(), rectProperties);
 				tx.sadd("whiteboard:" + rect.getWbID() + ":user:" + rect.getUsername() + ":shapes", rect.getUuid().toString());
@@ -78,13 +76,39 @@ public class RedisShapeDAO implements ShapeDAO {
 				rectProperties.put(FIELD_POS_X1, String.valueOf(circle.getCoordinate().getX()));
 				rectProperties.put(FIELD_POS_Y1, String.valueOf(circle.getCoordinate().getY()));
 				rectProperties.put(FIELD_CIRCLE_RADIUS, String.valueOf(circle.getRadius()));
-				rectProperties.put(FIELD_SHAPE_TYPE, String.valueOf("c"));
+				rectProperties.put(FIELD_SHAPE_TYPE, "c");
 
 				tx.hmset(circle.getShapeKey(), rectProperties);
 				tx.sadd("whiteboard:" + circle.getWbID() + ":user:" + circle.getUsername() + ":shapes", circle.getUuid().toString());
 				tx.exec();
 			}
 		} else {
+			throw new IllegalShapeException();
+		}
+	}
+	
+	public void insertPath(Path path) throws UserNotFoundException, WhiteboardNotFoundException, IllegalShapeException {
+		if (path != null && path.getUsername() != null && path.getWbID() != null) {
+			try (Jedis jedis = MyJedisPool.getPool("localhost").getResource()) {
+				UserDAO userDAO = new RedisUserDAO();
+				WhiteboardDAO wbDAO = new RedisWhiteboardDAO();
+
+				if (!userDAO.userExists(path.getUsername()))
+					throw new UserNotFoundException();
+				if (!wbDAO.whiteboardExists(path.getWbID()))
+					throw new WhiteboardNotFoundException();
+				
+				Transaction tx = jedis.multi();
+				Map<String, String> pathProperties = new HashMap<String, String>();
+				pathProperties.put(FIELD_PATH_POINTS, path.getPoints());
+				pathProperties.put(FIELD_SHAPE_TYPE, "p");
+				tx.hmset(path.getShapeKey(), pathProperties);
+				
+				tx.sadd("whiteboard:" + path.getWbID() + ":user:" + path.getUsername() + ":shapes", path.getUuid().toString());
+				tx.exec();
+			}
+		}
+		else {
 			throw new IllegalShapeException();
 		}
 	}
@@ -145,7 +169,7 @@ public class RedisShapeDAO implements ShapeDAO {
 
 			Pipeline p = jedis.pipelined();
 
-			// PIPELINED: Fetch all Shapes with out previously fetched UUIDs
+			// PIPELINED: Fetch all Shapes without previously fetched UUIDs
 			Response<Map<String, String>>[][] res = new Response[registeredUseres.size()][];
 			for (int x = 0; x < registeredUseres.size(); ++x) {
 				String username = registeredUseres.get(x).getUsername();

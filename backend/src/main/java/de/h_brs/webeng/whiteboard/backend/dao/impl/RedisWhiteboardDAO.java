@@ -242,12 +242,12 @@ public class RedisWhiteboardDAO implements WhiteboardDAO {
 			Transaction tx = jedis.multi();
 			tx.srem("whiteboards:"+accessTypeOld, wbidS);
 			
-			if(accessType == AccessType.PUBLIC) {
+			if(accessType.equals(AccessType.PUBLIC)) {
 				if(accessTypeOld.equals(ACCESS_PUBLIC))
 					return;
 				tx.sadd("whiteboards:"+ACCESS_PUBLIC, wbidS);
 				tx.hset("whiteboard:wbid", FIELD_ACCESS_TYPE, ACCESS_PUBLIC);
-			} else if(accessType == AccessType.PRIVATE) {
+			} else if(accessType.equals(AccessType.PRIVATE)) {
 				if(accessTypeOld.equals(ACCESS_PRIVATE))
 					return;
 				tx.sadd("whiteboards:"+ACCESS_PRIVATE, wbidS);
