@@ -12,17 +12,22 @@ import lombok.Setter;
 public class Whiteboard {
 	private long wbid;
 	
-	private boolean shared;
-
     private String creator;
 
     private List<User> artists;
 
     private List<Shape> finishedShapes;
+    
+    private AccessType accessType;
 
-    public Whiteboard(long wbid, String creator) {
+    public Whiteboard(Long wbid) {
+    	this.wbid = wbid;
+    }
+    
+    public Whiteboard(long wbid, String creator, AccessType accessType) {
 		this.wbid = wbid;
 		this.creator = creator;
+		this.accessType = accessType;
 	}
     
     @Override

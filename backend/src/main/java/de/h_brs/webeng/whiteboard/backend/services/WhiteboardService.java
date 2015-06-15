@@ -1,6 +1,6 @@
 package de.h_brs.webeng.whiteboard.backend.services;
 
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -17,6 +17,7 @@ import javax.ws.rs.core.Response.Status;
 
 import de.h_brs.webeng.whiteboard.backend.dao.WhiteboardDAO;
 import de.h_brs.webeng.whiteboard.backend.dao.exception.UserNotFoundException;
+import de.h_brs.webeng.whiteboard.backend.dao.exception.WhiteboardNotFoundException;
 import de.h_brs.webeng.whiteboard.backend.dao.impl.RedisWhiteboardDAO;
 import de.h_brs.webeng.whiteboard.backend.domain.Whiteboard;
 import de.h_brs.webeng.whiteboard.backend.dto.WhiteboardDto;
@@ -45,6 +46,23 @@ public class WhiteboardService {
 			return Response.status(Status.UNAUTHORIZED).build();
 		}
 	}
+	
+	// TODO Sebi soll mal überprüfen
+	@POST
+	@Path("/access")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public Response setWhiteboardAccess(WhiteboardDto whiteboardDto) {
+		try {
+			final WhiteboardDAO whiteboardDao = new RedisWhiteboardDAO();
+			whiteboardDao.setAccessType(whiteboardDto.getId(), whiteboardDto.getAccessType());
+			
+			return Response.ok(whiteboardDto).build();
+		} catch (WhiteboardNotFoundException e) {
+			return Response.status(Status.NOT_FOUND).build();
+		}
+	}
+	
 
 	@GET
 	@Path("/registered")
@@ -57,19 +75,33 @@ public class WhiteboardService {
 		
 		try {
 			final WhiteboardDAO whiteboardDao = new RedisWhiteboardDAO();
-			final List<Whiteboard> whiteboards = whiteboardDao.findRegisteredWhiteboards(username);
-			final List<WhiteboardDto> dtos = whiteboards.stream().map(wb -> {
+			final List<Whiteboard> createdWhiteboards = whiteboardDao.findCreatedWhiteboards(username);
+			final List<Whiteboard> registeredWhiteboards = whiteboardDao.findRegisteredWhiteboards(username);
+			
+			// Fetch all Whiteboards which the user OWNS
+			final List<WhiteboardDto> createdDtos = createdWhiteboards.stream().map(wb -> {
 				WhiteboardDto dto = new WhiteboardDto();
 				dto.setId(wb.getWbid());
 				dto.setCreator(wb.getCreator());
+				dto.setAccessType(wb.getAccessType());
 				return dto;
 			}).collect(Collectors.toList());
 			
-			for(int x=0; x<dtos.size(); ++x) {
-				System.out.println(dtos.get(x).getId());
-			}
+			// Fetch all Whiteboards which the user VISITS
+			final List<WhiteboardDto> registeredDtos = registeredWhiteboards.stream().map(wb -> {
+				WhiteboardDto dto = new WhiteboardDto();
+				dto.setId(wb.getWbid());
+				dto.setCreator(wb.getCreator());
+				dto.setAccessType(wb.getAccessType());
+				return dto;
+			}).collect(Collectors.toList());
 			
-			return Response.ok(dtos).build();
+			// Merge OWN-List and VISIT-List
+			final List<WhiteboardDto> allDtos = new ArrayList<WhiteboardDto>();
+			allDtos.addAll(createdDtos);
+			allDtos.addAll(registeredDtos);
+			
+			return Response.ok(allDtos).build();
 		} catch (UserNotFoundException e) {
 			return Response.status(Status.UNAUTHORIZED).build();
 		}
@@ -84,9 +116,23 @@ public class WhiteboardService {
 			return Response.status(Status.UNAUTHORIZED).build();
 		}
 		
-		// TODO
-		final List<WhiteboardDto> dtos = Collections.emptyList();
-		return Response.ok(dtos).build();
+		try {
+			final WhiteboardDAO whiteboardDao = new RedisWhiteboardDAO();
+			final List<Whiteboard> unregisteredWhiteboards = whiteboardDao.findRegisteredWhiteboards(username);
+			
+			final List<WhiteboardDto> unregisteredDtos = unregisteredWhiteboards.stream().map(wb -> {
+				WhiteboardDto dto = new WhiteboardDto();
+				dto.setId(wb.getWbid());
+				dto.setCreator(wb.getCreator());
+				dto.setAccessType(wb.getAccessType());
+				return dto;
+			}).collect(Collectors.toList());
+			
+			return Response.ok(unregisteredDtos).build();
+		} catch (UserNotFoundException e) {
+			return Response.status(Status.UNAUTHORIZED).build();
+		}
+		
 	}
 
 }

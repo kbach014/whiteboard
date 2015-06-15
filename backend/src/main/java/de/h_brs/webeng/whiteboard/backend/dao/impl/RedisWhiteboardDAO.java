@@ -14,11 +14,12 @@ import de.h_brs.webeng.whiteboard.backend.dao.exception.*;
 import de.h_brs.webeng.whiteboard.backend.domain.*;
 
 public class RedisWhiteboardDAO implements WhiteboardDAO {
-	private final String ALL_WHITEBOARDS = "whiteboards";
-
-	public final int PUBLIC = 0;
-	public final int PRIVATE = 1;
-
+	public static final String FIELD_ACCESS_TYPE 	= "accessType";
+	public static final String FIELD_WHITEBOARD_ID 	= "wbid";
+	public static final String FIELD_CREATOR		= "creator";
+	
+	public static final String ACCESS_PUBLIC		= "public";
+	public static final String ACCESS_PRIVATE		= "private";
 	/**
 	 * Inserts a new Whiteboard-Instance in the database. The instance will be saved as a Redis-Hash and the generated wb-ID will be added to the Redis-List which indicates all Whiteboards
 	 */
@@ -29,28 +30,26 @@ public class RedisWhiteboardDAO implements WhiteboardDAO {
 				UserDAO userDAO = new RedisUserDAO();
 
 				if (userDAO.userExists(creatorName)) {
+					Long wbid = jedis.incr("wbid");
+					
 					// Generate a new ID (atomic operation)
-					long wbid = jedis.incr("wbid");
-
 					Transaction tx = jedis.multi();
-
 					// Store singleWhiteboard Instance as a Redis Hash
 					String wbKey = "whiteboard:" + wbid;
-					tx.hset(wbKey, "wbid", String.valueOf(wbid));
-					tx.hset(wbKey, "creator", creatorName);
+					tx.hset(wbKey, FIELD_WHITEBOARD_ID, String.valueOf(wbid));
+					tx.hset(wbKey, FIELD_CREATOR, creatorName);
+					tx.hset(wbKey, FIELD_ACCESS_TYPE, ACCESS_PRIVATE);
 
 					// Put Whiteboard Key in a Redis Set
-					tx.sadd("whiteboards", String.valueOf(wbid));
+					tx.sadd("whiteboards:private", String.valueOf(wbid));
 
 					// Register creator to his own whiteboard:
-					String wbUsersKey = "whiteboard:" + wbid + ":users";
-					String userWbsKey = "user:" + creatorName + ":whiteboards";
-					tx.sadd(wbUsersKey, creatorName);
-					tx.sadd(userWbsKey, String.valueOf(wbid));
+					String creatorWbsKey = "creator:" + creatorName + ":whiteboards";
+					tx.sadd(creatorWbsKey, String.valueOf(wbid));
 
 					tx.exec();
 
-					return new Whiteboard(wbid, creatorName);
+					return new Whiteboard(wbid, creatorName, AccessType.PRIVATE);
 				} else {
 					throw new UserNotFoundException();
 				}
@@ -81,16 +80,19 @@ public class RedisWhiteboardDAO implements WhiteboardDAO {
 	public Whiteboard findWhiteboardByID(long wbid) throws WhiteboardNotFoundException {
 		// System.out.println("Trying to retrive Whiteboard#"+wbid+"\n");
 		try (Jedis jedis = MyJedisPool.getPool("localhost").getResource()) {
-			if (jedis.sismember(ALL_WHITEBOARDS, String.valueOf(wbid))) {
-				Map<String, String> properties = jedis.hgetAll("whiteboard:" + wbid);
-				// System.out.println("Whiteboard#"+wbid+" was found!");
-
-				String creatorUserName = properties.get("creator");
-
-				return new Whiteboard(wbid, creatorUserName);
-			} else {
+			Map<String, String> properties = jedis.hgetAll("whiteboard:" + wbid);
+			
+			if(properties.size() > 0) {
+				String creatorUserName = properties.get(FIELD_CREATOR);
+				String accessType = properties.get(FIELD_ACCESS_TYPE);
+				
+				if(accessType != null)
+					return new Whiteboard(wbid, creatorUserName, AccessTypeMap.getInstance().get(accessType));
+				else
+					throw new WhiteboardNotFoundException(wbid);
+			} else 
 				throw new WhiteboardNotFoundException(wbid);
-			}
+			
 		}
 	}
 
@@ -101,7 +103,7 @@ public class RedisWhiteboardDAO implements WhiteboardDAO {
 	@Override
 	public List<Whiteboard> findWhiteboards(int start, int count) {
 		try (Jedis jedis = MyJedisPool.getPool("localhost").getResource()) {
-			List<String> lst = jedis.sort("whiteboards", new SortingParams().limit(start, count).get("whiteboard:*->wbid", "whiteboard:*->creator"));
+			List<String> lst = jedis.sort("whiteboards:public", new SortingParams().limit(start, count).get("whiteboard:*->wbid", "whiteboard:*->creator"));
 			List<Whiteboard> allWhiteboards = new ArrayList<Whiteboard>();
 
 			if (!lst.isEmpty()) {
@@ -110,7 +112,7 @@ public class RedisWhiteboardDAO implements WhiteboardDAO {
 					long wbid = Long.parseLong(lst.get(x));
 					String creatorUserName = lst.get(x + 1);
 
-					allWhiteboards.add(new Whiteboard(wbid, creatorUserName));
+					allWhiteboards.add(new Whiteboard(wbid, creatorUserName, AccessType.PUBLIC));
 				}
 			}
 
@@ -129,15 +131,44 @@ public class RedisWhiteboardDAO implements WhiteboardDAO {
 
 			UserDAO userDAO = new RedisUserDAO();
 			if (userDAO.userExists(username)) {
-				List<String> lst = jedis.sort("user:" + username + ":whiteboards", new SortingParams().nosort().get("whiteboard:*->wbid", "whiteboard:*->creator"));
+				List<String> lst = jedis.sort("user:" + username + ":whiteboards",
+						new SortingParams().nosort().get("whiteboard:*->" + FIELD_WHITEBOARD_ID, "whiteboard:*->" + FIELD_CREATOR , "whiteboard:*->" + FIELD_ACCESS_TYPE));
 
 				if (!lst.isEmpty()) {
 					userWhiteboards = new ArrayList<Whiteboard>();
-					for (int x = 0; x < lst.size(); x += 2) {
+					for (int x = 0; x < lst.size(); x += 3) {
 						long wbid = Long.parseLong(lst.get(x));
 						String creatorUserName = lst.get(x + 1);
+						String accessType = lst.get(x + 2);
+						
+						userWhiteboards.add(new Whiteboard(wbid, creatorUserName, AccessTypeMap.getInstance().get(accessType)));
+					}
+				}
+			} else {
+				throw new UserNotFoundException();
+			}
 
-						userWhiteboards.add(new Whiteboard(wbid, creatorUserName));
+			return userWhiteboards;
+		}
+	}
+	
+	public List<Whiteboard> findCreatedWhiteboards(String username) throws UserNotFoundException {
+		try (Jedis jedis = MyJedisPool.getPool("localhost").getResource()) {
+			List<Whiteboard> userWhiteboards = new ArrayList<Whiteboard>();
+
+			UserDAO userDAO = new RedisUserDAO();
+			if (userDAO.userExists(username)) {
+				List<String> lst = jedis.sort("creator:" + username + ":whiteboards",
+						new SortingParams().nosort().get("whiteboard:*->" + FIELD_WHITEBOARD_ID, "whiteboard:*->" + FIELD_CREATOR , "whiteboard:*->" + FIELD_ACCESS_TYPE));
+				
+				if (!lst.isEmpty()) {
+					userWhiteboards = new ArrayList<Whiteboard>();
+					for (int x = 0; x < lst.size(); x += 3) {
+						long wbid = Long.parseLong(lst.get(x));
+						String creatorUserName = lst.get(x + 1);
+						String accessType = lst.get(x + 2);
+						
+						userWhiteboards.add(new Whiteboard(wbid, creatorUserName, AccessTypeMap.getInstance().get(accessType)));
 					}
 				}
 			} else {
@@ -155,17 +186,17 @@ public class RedisWhiteboardDAO implements WhiteboardDAO {
 	 * NOTE: This method fetches Whiteboards lazy. Only base information (wbid, crator-name) about the Whiteboard gets fetched. There won't be any information about Shapes or any other User of the Whiteboard.
 	 */
 	@SuppressWarnings("unchecked")
-	public List<Whiteboard> findUnregisteredWhiteboards(User user, int start, int count) throws UserNotFoundException {
+	public List<Whiteboard> findUnregisteredWhiteboards(String username, int start, int count) throws UserNotFoundException {
 		try (Jedis jedis = MyJedisPool.getPool("localhost").getResource()) {
 			UserDAO userDAO = new RedisUserDAO();
-			if (!userDAO.userExists(user)) {
+			if (!userDAO.userExists(username)) {
 				throw new UserNotFoundException();
 			}
 			// Fetch the latest X whiteboards
-			List<String> latestWBs = jedis.sort("whiteboards", new SortingParams().limit(start, count).desc().get("whiteboard:*->wbid", "whiteboard:*->creator"));
+			List<String> latestWBs = jedis.sort("whiteboards:public", new SortingParams().limit(start, count).desc().get("whiteboard:*->wbid", "whiteboard:*->creator"));
 			List<Whiteboard> unregisteredWhiteboards = new ArrayList<Whiteboard>();
 
-			String userWBkeys = "user:" + user.getUsername() + ":whiteboards";
+			String userWBkeys = "user:" + username + ":whiteboards";
 
 			// Make use of pipelining for performance reasons
 			Pipeline p = jedis.pipelined();
@@ -184,8 +215,10 @@ public class RedisWhiteboardDAO implements WhiteboardDAO {
 					// candidate for our unregistered WB List
 					Long wbID = Long.parseLong(latestWBs.get(x));
 					String creator = latestWBs.get(x + 1);
-					Whiteboard wb = new Whiteboard(wbID, creator);
-					unregisteredWhiteboards.add(wb);
+					if(!creator.equals(username)) {
+						Whiteboard wb = new Whiteboard(wbID, creator, AccessType.PUBLIC);
+						unregisteredWhiteboards.add(wb);
+					}
 				}
 			}
 
@@ -196,16 +229,32 @@ public class RedisWhiteboardDAO implements WhiteboardDAO {
 	}
 
 	@Override
-	public void setPublicity(Whiteboard wb, int mode) {
-		switch (mode) {
-		case PUBLIC:
-			if (!wb.isShared())
-				wb.setShared(true);
-			break;
-		case PRIVATE:
-			if (wb.isShared())
-				wb.setShared(false);
-			break;
+	public void setAccessType(Long wbid, AccessType accessType) throws WhiteboardNotFoundException {
+		try (Jedis jedis = MyJedisPool.getPool("localhost").getResource()) {
+			String accessTypeOld = jedis.hget("whiteboard:wbid", FIELD_ACCESS_TYPE);
+			String wbidS = String.valueOf(wbid);
+			
+			if(accessTypeOld == null || accessTypeOld.equals("")) {
+				throw new WhiteboardNotFoundException(wbid);
+			}
+			
+			// Remove the old AT first, then add the new one
+			Transaction tx = jedis.multi();
+			tx.srem("whiteboards:"+accessTypeOld, wbidS);
+			
+			if(accessType == AccessType.PUBLIC) {
+				if(accessTypeOld.equals(ACCESS_PUBLIC))
+					return;
+				tx.sadd("whiteboards:"+ACCESS_PUBLIC, wbidS);
+				tx.hset("whiteboard:wbid", FIELD_ACCESS_TYPE, ACCESS_PUBLIC);
+			} else if(accessType == AccessType.PRIVATE) {
+				if(accessTypeOld.equals(ACCESS_PRIVATE))
+					return;
+				tx.sadd("whiteboards:"+ACCESS_PRIVATE, wbidS);
+				tx.hset("whiteboard:wbid", FIELD_ACCESS_TYPE, ACCESS_PRIVATE);
+			}
+			
+			tx.exec();
 		}
 	}
 
@@ -220,7 +269,12 @@ public class RedisWhiteboardDAO implements WhiteboardDAO {
 	}
 
 	public boolean whiteboardExists(String wbid, Jedis jedis) {
-		return jedis.sismember(ALL_WHITEBOARDS, wbid);
+		Map<String, String> result = jedis.hgetAll("whiteboard:"+wbid);
+		
+		if(result.size() > 0)
+			return true;
+		else
+			return false;
 	}
 
 	public boolean whiteboardExists(Whiteboard whiteboard, Jedis jedis) {

@@ -171,22 +171,21 @@ public class RedisUserDAO implements UserDAO {
 			if (!wbDAO.whiteboardExists(whiteboard, jedis)) {
 				throw new WhiteboardNotFoundException();
 			}
-
-			return jedis.sismember("user:" + user.getUsername() + ":whiteboards", String.valueOf(whiteboard.getWbid()));
+			
+			if(jedis.sismember("user:" + user.getUsername() + ":whiteboards", String.valueOf(whiteboard.getWbid())))
+				return true;
+			else if(jedis.sismember("creator:" + user.getUsername() + ":whiteboards", String.valueOf(whiteboard.getWbid())))
+				return true;
+			else
+				return false;
 		}
 	}
 
 	public boolean userHasWhiteboard(String username, Long wbID) throws UserNotFoundException, WhiteboardNotFoundException {
-		try (Jedis jedis = MyJedisPool.getPool("localhost").getResource()) {
-			RedisWhiteboardDAO wbDAO = new RedisWhiteboardDAO();
-			if (!userExists(username, jedis)) {
-				throw new UserNotFoundException();
-			}
-			if (!wbDAO.whiteboardExists(String.valueOf(wbID), jedis)) {
-				throw new WhiteboardNotFoundException();
-			}
-			return jedis.sismember("user:" + username + ":whiteboards", String.valueOf(wbID));
-		}
+		User usr = new User(username);
+		Whiteboard wb = new Whiteboard(wbID);
+		
+		return userHasWhiteboard(usr, wb);
 	}
 
 	public boolean userExists(String username) {

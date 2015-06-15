@@ -3,7 +3,7 @@ package de.h_brs.webeng.whiteboard.backend.dao;
 import java.util.List;
 
 import de.h_brs.webeng.whiteboard.backend.dao.exception.*;
-import de.h_brs.webeng.whiteboard.backend.domain.User;
+import de.h_brs.webeng.whiteboard.backend.domain.AccessType;
 import de.h_brs.webeng.whiteboard.backend.domain.Whiteboard;
 
 public interface WhiteboardDAO {
@@ -19,9 +19,11 @@ public interface WhiteboardDAO {
 
 	List<Whiteboard> findRegisteredWhiteboards(String username) throws UserNotFoundException;
 	
-	List<Whiteboard> findUnregisteredWhiteboards(User user, int start, int count) throws UserNotFoundException;
+	List<Whiteboard> findUnregisteredWhiteboards(String username, int start, int count) throws UserNotFoundException;
 	
-	public void setPublicity(Whiteboard wb, int mode);
+	List<Whiteboard> findCreatedWhiteboards(String username) throws UserNotFoundException;
+	
+	void setAccessType(Long wbid, AccessType accessType) throws WhiteboardNotFoundException;
     
     boolean whiteboardExists(String wbid);
     
