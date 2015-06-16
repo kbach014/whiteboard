@@ -134,12 +134,11 @@ angular.module('whiteboard').controller('WhiteboardCtrl', ['$scope', '$routePara
 	};
 
 	if ($routeParams.id) {
+		whiteboardService.setMessageCallback(function(remoteDrawEvent) {
+			addOrUpdateShape(remoteDrawEvent.shape);
+		});
 		whiteboardService.connect($routeParams.id).then(function() {
 			$scope.successMessage = 'Connection established.';
-			whiteboardService.setReceiverCallback(function(remoteDrawEvent) {
-				console.log('received', remoteDrawEvent);
-				addOrUpdateShape(remoteDrawEvent.shape);
-			});
 		}, function() {
 			$scope.errorMessage = 'Unable to connect to shared whiteboard.';
 		});
@@ -476,6 +475,8 @@ angular.module('whiteboard').factory('whiteboardService', ['$http', '$q', '$inte
 	'use strict';
 
 	var socket;
+	var messageCallback = _.noop();
+	var errorCallback = _.noop();
 	var eventQueue = [];
 	var queueDrainer = null;
 	var drainQueue = function() {
@@ -497,6 +498,10 @@ angular.module('whiteboard').factory('whiteboardService', ['$http', '$q', '$inte
 				deferred.reject();
 			};
 
+			socket.onmessage = function(message) {
+				messageCallback(JSON.parse(message.data));
+			};
+
 			socket.onopen = function() {
 				socket.onerror = _.noop();
 				queueDrainer = $interval(drainQueue, 100, false);
@@ -507,20 +512,28 @@ angular.module('whiteboard').factory('whiteboardService', ['$http', '$q', '$inte
 		},
 
 		setErrorCallback: function(callback) {
-			if (socket && _.isFunction(callback)) {
-				socket.onerror = callback;
+			if (_.isFunction(callback)) {
+				errorCallback = callback;
 			} else {
-				socket.onerror = _.noop();
+				errorCallback = _.noop();
+			}
+
+			if (socket) {
+				socket.onerror = errorCallback;
 			}
 		},
 
-		setReceiverCallback: function(callback) {
-			if (socket && _.isFunction(callback)) {
-				socket.onmessage = function(message) {
-					callback(JSON.parse(message.data));
-				};
+		setMessageCallback: function(callback) {
+			if (_.isFunction(callback)) {
+				messageCallback = callback;
 			} else {
-				socket.onerror = _.noop();
+				messageCallback = _.noop();
+			}
+
+			if (socket) {
+				socket.onmessage = function(message) {
+					messageCallback(JSON.parse(message.data));
+				};
 			}
 		},
 

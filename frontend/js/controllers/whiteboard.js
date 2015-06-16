@@ -18,12 +18,11 @@ angular.module('whiteboard').controller('WhiteboardCtrl', ['$scope', '$routePara
 	};
 
 	if ($routeParams.id) {
+		whiteboardService.setMessageCallback(function(remoteDrawEvent) {
+			addOrUpdateShape(remoteDrawEvent.shape);
+		});
 		whiteboardService.connect($routeParams.id).then(function() {
 			$scope.successMessage = 'Connection established.';
-			whiteboardService.setReceiverCallback(function(remoteDrawEvent) {
-				console.log('received', remoteDrawEvent);
-				addOrUpdateShape(remoteDrawEvent.shape);
-			});
 		}, function() {
 			$scope.errorMessage = 'Unable to connect to shared whiteboard.';
 		});

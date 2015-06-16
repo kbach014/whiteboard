@@ -124,7 +124,9 @@ public class WhiteboardHandler extends UntypedActor {
 	
 	private Color getColorForUser(String username) {
 		return sessionColors.computeIfAbsent(username, name -> {
-			return Color.values()[sessionColors.size() % Color.values().length];
+			final Color color = Color.values()[sessionColors.size() % Color.values().length];
+			LOG.debug("WB#{} assigning color {} to user {}", whiteboardId, color.name(), name);
+			return color;
 		});
 	}
 
