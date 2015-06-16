@@ -96,6 +96,22 @@ public class RedisWhiteboardDAO implements WhiteboardDAO {
 		}
 	}
 
+	public Whiteboard findWhiteboardByID(long wbid, Jedis jedis) throws WhiteboardNotFoundException {
+		// System.out.println("Trying to retrive Whiteboard#"+wbid+"\n");
+		Map<String, String> properties = jedis.hgetAll("whiteboard:" + wbid);
+
+		if (properties.size() > 0) {
+			String creatorUserName = properties.get(FIELD_CREATOR);
+			String accessType = properties.get(FIELD_ACCESS_TYPE);
+
+			if (accessType != null)
+				return new Whiteboard(wbid, creatorUserName, AccessTypeMap.getInstance().get(accessType));
+			else
+				throw new WhiteboardNotFoundException(wbid);
+		} else
+			throw new WhiteboardNotFoundException(wbid);
+	}
+
 	/**
 	 * Fetches a limited amount of Whiteboards NOTE: This method fetches Whiteboards lazy. Only base information (wbid, crator-name) about the Whiteboard gets fetched. There won't be any information about Shapes or any
 	 * other User of the Whiteboard.

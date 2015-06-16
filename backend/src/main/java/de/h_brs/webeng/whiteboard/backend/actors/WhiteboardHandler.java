@@ -1,8 +1,7 @@
 package de.h_brs.webeng.whiteboard.backend.actors;
 
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -16,7 +15,9 @@ import de.h_brs.webeng.whiteboard.backend.dao.impl.RedisShapeDAO;
 import de.h_brs.webeng.whiteboard.backend.domain.Color;
 import de.h_brs.webeng.whiteboard.backend.domain.Path;
 import de.h_brs.webeng.whiteboard.backend.domain.Rectangle;
+import de.h_brs.webeng.whiteboard.backend.domain.Shape;
 import de.h_brs.webeng.whiteboard.backend.domain.ShapeType;
+import de.h_brs.webeng.whiteboard.backend.domain.Whiteboard;
 import de.h_brs.webeng.whiteboard.backend.dto.DrawEventDto;
 import de.h_brs.webeng.whiteboard.backend.dto.DrawEventDto.EventType;
 import de.h_brs.webeng.whiteboard.backend.dto.ShapeDto;
@@ -55,21 +56,39 @@ public class WhiteboardHandler extends UntypedActor {
 		connectedClients++;
 		upstreamRouter = upstreamRouter.addRoutee(getSender());
 		
-		// TODO load finished shapes and send them to the new participant:
-		Collection<Rectangle> storedRects = Collections.emptyList();
-		for (Rectangle rect : storedRects) {
+		ShapeDAO shapeDAO = new RedisShapeDAO();
+		
+		List<Shape> allShapes = shapeDAO.findAllShapesFromWB(new Whiteboard(whiteboardId));
+		
+		for(Shape shape : allShapes) {
 			final DrawEventDto event = new DrawEventDto();
-			event.setType(EventType.FINISH);
-			event.setShape(new ShapeDto());
-			event.getShape().setUuid(rect.getUuid());
-			event.getShape().setType(ShapeType.RECT);
-			event.getShape().setFinished(true);
-			event.getShape().setColor(getColorForUser(rect.getUsername()));
-			event.getShape().setP1(rect.getP1());
-			event.getShape().setP2(rect.getP2());
-			getSender().tell(event, getSelf());
+			
+			if(shape.getType().equals(ShapeType.RECT)) {
+				Rectangle rect = (Rectangle) shape;
+				
+				event.setType(EventType.FINISH);
+				event.setShape(new ShapeDto());
+				event.getShape().setUuid(rect.getUuid());
+				event.getShape().setType(ShapeType.RECT);
+				event.getShape().setFinished(true);
+				event.getShape().setColor(getColorForUser(rect.getUsername()));
+				event.getShape().setP1(rect.getP1());
+				event.getShape().setP2(rect.getP2());
+				getSender().tell(event, getSelf());
+			} else if(shape.getType().equals(ShapeType.PATH)) {
+				Path path = (Path) shape;
+				
+				event.setType(EventType.FINISH);
+				event.setShape(new ShapeDto());
+				event.getShape().setUuid(path.getUuid());
+				event.getShape().setType(ShapeType.PATH);
+				event.getShape().setFinished(true);
+				event.getShape().setColor(getColorForUser(path.getUsername()));
+				event.getShape().setPoints(path.getPoints());
+				getSender().tell(event, getSelf());
+			}
+			
 		}
-		// TODO same for PATHs
 		
 		LOG.debug("added receiver {} to whiteboard {}", hello.getUsername(), whiteboardId);
 	}

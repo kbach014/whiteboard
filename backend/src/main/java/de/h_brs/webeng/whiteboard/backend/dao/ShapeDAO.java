@@ -1,11 +1,13 @@
 package de.h_brs.webeng.whiteboard.backend.dao;
 
-import java.util.HashMap;
+import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+
 import de.h_brs.webeng.whiteboard.backend.domain.Shape;
-import de.h_brs.webeng.whiteboard.backend.domain.Whiteboard;
 import de.h_brs.webeng.whiteboard.backend.dao.exception.*;
 import de.h_brs.webeng.whiteboard.backend.domain.*;
 
@@ -22,6 +24,6 @@ public interface ShapeDAO {
 
     Shape findShapeByUUID(UUID uuid);
 
-    HashMap<String, List<Shape>> findAllShapesFromWB(Whiteboard whiteboard) throws WhiteboardNotFoundException;
+    List<Shape> findAllShapesFromWB(Whiteboard whiteboard) throws WhiteboardNotFoundException, JsonParseException, JsonMappingException, IOException;
 }
 

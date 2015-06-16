@@ -1,6 +1,7 @@
 package de.h_brs.webeng.whiteboard.backend.services;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -8,17 +9,22 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
+import de.h_brs.webeng.whiteboard.backend.dao.ShapeDAO;
 import de.h_brs.webeng.whiteboard.backend.dao.WhiteboardDAO;
 import de.h_brs.webeng.whiteboard.backend.dao.exception.UserNotFoundException;
 import de.h_brs.webeng.whiteboard.backend.dao.exception.WhiteboardNotFoundException;
+import de.h_brs.webeng.whiteboard.backend.dao.impl.RedisShapeDAO;
 import de.h_brs.webeng.whiteboard.backend.dao.impl.RedisWhiteboardDAO;
+import de.h_brs.webeng.whiteboard.backend.domain.Shape;
 import de.h_brs.webeng.whiteboard.backend.domain.Whiteboard;
 import de.h_brs.webeng.whiteboard.backend.dto.WhiteboardDto;
 
@@ -48,13 +54,15 @@ public class WhiteboardService {
 	}
 	
 	// TODO Sebi soll mal überprüfen
-	@POST
-	@Path("/access")
+	@PUT
+	@Path("/{id}")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-	public Response setWhiteboardAccess(WhiteboardDto whiteboardDto) {
+	public Response update(WhiteboardDto whiteboardDto, @PathParam("id") long whiteboardId) {
 		try {
+			
 			final WhiteboardDAO whiteboardDao = new RedisWhiteboardDAO();
+			// id param nicht dto
 			whiteboardDao.setAccessType(whiteboardDto.getId(), whiteboardDto.getAccessType());
 			
 			return Response.ok(whiteboardDto).build();
@@ -62,7 +70,6 @@ public class WhiteboardService {
 			return Response.status(Status.NOT_FOUND).build();
 		}
 	}
-	
 
 	@GET
 	@Path("/registered")
@@ -71,7 +78,7 @@ public class WhiteboardService {
 		final String username = (String) req.getSession().getAttribute("username");
 		if (username == null) {
 			return Response.status(Status.UNAUTHORIZED).build();
-		}
+		}	
 		
 		try {
 			final WhiteboardDAO whiteboardDao = new RedisWhiteboardDAO();

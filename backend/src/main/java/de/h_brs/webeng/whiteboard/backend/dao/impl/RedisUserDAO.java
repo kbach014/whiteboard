@@ -59,17 +59,40 @@ public class RedisUserDAO implements UserDAO {
 			}
 		}
 	}
+	
+	public User findUserByUsername(String username, Jedis jedis) throws UserNotFoundException {
+		if (userExists(username, jedis)) {
+			Map<String, String> properties = jedis.hgetAll("user:" + username);
+			// System.out.println("User \""+username+"\" was found!");
+			return new User(username, properties.get("firstname"), properties.get("lastname"));
+		} else {
+			throw new UserNotFoundException(username);
+		}
+	}
 
 	@Override
 	public List<User> findAllUsersFromWB(Whiteboard whiteboard) throws WhiteboardNotFoundException {
 		try (Jedis jedis = MyJedisPool.getPool("localhost").getResource()) {
 			RedisWhiteboardDAO wbDAO = new RedisWhiteboardDAO();
 			List<User> wbUsers = new ArrayList<User>();
-
+			
 			if (!wbDAO.whiteboardExists(whiteboard, jedis)) {
 				throw new WhiteboardNotFoundException();
 			}
-
+			
+			if(whiteboard.getCreator() == null || whiteboard.getCreator().equals("")) {
+				whiteboard = wbDAO.findWhiteboardByID(whiteboard.getWbid(), jedis);
+			}
+			
+			RedisUserDAO userDAO = new RedisUserDAO();
+			User creator = null;
+			try {
+				creator = userDAO.findUserByUsername(whiteboard.getCreator(), jedis);
+			} catch(UserNotFoundException e) {
+				e.printStackTrace();
+			}
+			wbUsers.add(creator);
+			
 			String wbUsernames = "whiteboard:" + whiteboard.getWbid() + ":users";
 
 			List<String> lst = jedis.sort(wbUsernames,
@@ -84,7 +107,9 @@ public class RedisUserDAO implements UserDAO {
 					wbUsers.add(new User(username, firstname, lastname));
 				}
 			}
-
+			
+			
+			
 			return wbUsers;
 		}
 	}

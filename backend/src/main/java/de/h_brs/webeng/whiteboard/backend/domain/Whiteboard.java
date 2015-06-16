@@ -30,6 +30,12 @@ public class Whiteboard {
 		this.accessType = accessType;
 	}
     
+    public Whiteboard(long wbid, String creator) {
+		this.wbid = wbid;
+		this.creator = creator;
+		this.accessType = AccessType.PRIVATE;
+	}
+    
     @Override
     public String toString() {
     	String whiteboardInfo = "WB-ID:"+getWbid()+"\n"

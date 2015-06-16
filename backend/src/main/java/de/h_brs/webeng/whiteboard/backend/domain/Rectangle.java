@@ -22,6 +22,12 @@ public class Rectangle extends Shape {
     	this.p2 = p2;
 	}
     
+    public Rectangle(String username, Long whiteboardID,  Point p1, Point p2) {
+    	this(username, String.valueOf(whiteboardID));
+    	this.p1 = p1;
+    	this.p2 = p2;
+	}
+    
     public Rectangle(User user, Whiteboard whiteboard, Point p1, Point p2) {
     	this(user.getUsername(), String.valueOf(whiteboard.getWbid()));
     	this.p1 = p1;

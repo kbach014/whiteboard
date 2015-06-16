@@ -13,19 +13,23 @@ import lombok.Setter;
 public class Path extends Shape {
 	private static final long serialVersionUID = -9008979126088002100L;
 	
-	private String points; 
+	private List<Point> points; 
 	
-	public Path(String username, String whiteboardID, List<Point> coords) {
+	public Path(User user, Whiteboard whiteboard, List<Point> points) {
+		super(ShapeType.PATH, user.getUsername(), String.valueOf(whiteboard.getWbid()));
+		
+		this.points = points;
+	}
+	
+	public Path(String username, String whiteboardID, List<Point> points) {
 		super(ShapeType.PATH, username, whiteboardID);
 		
-		StringBuilder sb = new StringBuilder();
-		for(int x=0; x<coords.size(); ++x) {
-			sb.append(coords.get(x).getX());
-			sb.append(",");
-			sb.append(coords.get(x).getY());
-			if(x != coords.size() - 1)
-				sb.append(":");
-		}
-		points = sb.toString();
+		this.points = points;
+	}
+	
+	public Path(String username, Long whiteboardID, List<Point> points) {
+		super(ShapeType.PATH, username, String.valueOf(whiteboardID));
+		
+		this.points = points;
 	}
 }
