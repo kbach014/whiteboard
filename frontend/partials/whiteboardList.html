@@ -15,6 +15,7 @@
     <tr>
       <th>ID</th>
       <th>Ersteller</th>
+      <th>Öffentlich</th>
       <th>Aktion</th>
     </tr>
   </thead>
@@ -23,13 +24,39 @@
     <tr data-ng-repeat="wb in registeredWhiteboards">
       <td>{{wb.id}}</td>
       <td>{{wb.creator}}</td>
-      <td><button class="btn btn-default" data-ng-click="join(wb.id)">Öffnen</button></td>
+      <td>
+        <button class="btn btn-default" data-ng-class="{'active': wb.accessType == 'PUBLIC'}" data-ng-click="toggleAccessibility(wb)">
+          <span class="glyphicon glyphicon-ok" data-ng-show="wb.accessType == 'PUBLIC'"></span>
+          <span class="glyphicon glyphicon-remove" data-ng-show="wb.accessType == 'PRIVATE'"></span>
+        </button>
+      </td>
+      <td><button class="btn btn-default" data-ng-click="open(wb.id)">Öffnen</button></td>
     </tr>
   </tbody>
 
   <tfoot>
     <tr>
-      <td colspan="3"><button class="btn btn-default" data-ng-click="createWhiteboard()">Neues Whiteboard anlegen</button></td>
+      <td colspan="4"><button class="btn btn-default" data-ng-click="createWhiteboard()">Neues Whiteboard anlegen</button></td>
     </tr>
   </tfoot>
+</table>
+
+<h2>Öffentliche Whiteboards</h2>
+
+<table class="table">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Ersteller</th>
+      <th>Aktion</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <tr data-ng-repeat="wb in unregisteredWhiteboards">
+      <td>{{wb.id}}</td>
+      <td>{{wb.creator}}</td>
+      <td><button class="btn btn-default" data-ng-click="join(wb.id)">Beitreten</button></td>
+    </tr>
+  </tbody>
 </table>

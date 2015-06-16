@@ -167,9 +167,14 @@ angular.module('whiteboard').controller('WhiteboardListCtrl', ['$scope', '$locat
 	'use strict';
 
 	$scope.registeredWhiteboards = [];
+	$scope.unregisteredWhiteboards = [];
 
 	whiteboardsService.findRegisteredWhiteboards().then(function(whiteboards) {
 		$scope.registeredWhiteboards = whiteboards;
+	});
+
+	whiteboardsService.findUnregisteredWhiteboards().then(function(whiteboards) {
+		$scope.unregisteredWhiteboards = whiteboards;
 	});
 
 	$scope.createWhiteboard = function() {
@@ -181,8 +186,26 @@ angular.module('whiteboard').controller('WhiteboardListCtrl', ['$scope', '$locat
 		});
 	};
 
-	$scope.join = function(whiteboardId) {
+	$scope.toggleAccessibility = function(whiteboard) {
+		var updatedWhiteboard = _.assign({}, whiteboard);
+		if (updatedWhiteboard.accessType == 'PUBLIC') {
+			updatedWhiteboard.accessType = 'PRIVATE';
+		} else {
+			updatedWhiteboard.accessType = 'PUBLIC';
+		}
+		whiteboardsService.update(updatedWhiteboard, function() {
+			_.assign(whiteboard, updatedWhiteboard);
+		}, function() {
+			$scope.errorMessage = 'Konnte Öffentlichkeit nicht umschalten.';
+		});
+	};
+
+	$scope.open = function(whiteboardId) {
 		$location.url('/whiteboard/' + whiteboardId);
+	};
+
+	$scope.join = function(whiteboard) {
+		// TODO: whiteboardsService.join
 	};
 
 	$scope.dismissErrorMessage = function() {
@@ -530,9 +553,21 @@ angular.module('whiteboard').factory('whiteboardsService', ['$http', '$q', funct
 			return deferred.promise;
 		},
 
+		findUnregisteredWhiteboards: function() {
+			var deferred = $q.defer();
+			$http.get('/backend/rest/whiteboards/unregistered').success(deferred.resolve).error(deferred.reject);
+			return deferred.promise;
+		},
+
 		createWhiteboards: function() {
 			var deferred = $q.defer();
 			$http.post('/backend/rest/whiteboards', {}).success(deferred.resolve).error(deferred.reject);
+			return deferred.promise;
+		},
+
+		update: function(whiteboard) {
+			var deferred = $q.defer();
+			$http.put('/backend/rest/whiteboards/' + whiteboard.id, whiteboard).success(deferred.resolve).error(deferred.reject);
 			return deferred.promise;
 		}
 
