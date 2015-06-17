@@ -13,6 +13,11 @@ angular.module('whiteboard').config(['$routeProvider', '$httpProvider', function
 		templateUrl: 'partials/login.html'
 	});
 
+	$routeProvider.when('/loggedOut', {
+		controller: 'LoginCtrl',
+		templateUrl: 'partials/logout.html'
+	});
+
 	$routeProvider.when('/registration', {
 		controller: 'RegistrationCtrl',
 		templateUrl: 'partials/registration.html'

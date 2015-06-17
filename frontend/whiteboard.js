@@ -13,6 +13,11 @@ angular.module('whiteboard').config(['$routeProvider', '$httpProvider', function
 		templateUrl: 'partials/login.html'
 	});
 
+	$routeProvider.when('/loggedOut', {
+		controller: 'LoginCtrl',
+		templateUrl: 'partials/logout.html'
+	});
+
 	$routeProvider.when('/registration', {
 		controller: 'RegistrationCtrl',
 		templateUrl: 'partials/registration.html'
@@ -55,7 +60,7 @@ angular.module('whiteboard').run(['$location', '$rootScope', 'userService', func
 angular.module('whiteboard').controller('HomeCtrl', [function() {}]);
 ;
 
-angular.module('whiteboard').controller('LoginCtrl', ['$scope', 'userService', function($scope, userService) {
+angular.module('whiteboard').controller('LoginCtrl', ['$scope', '$location', 'userService', function($scope, $location, userService) {
 	'use strict';
 
 	$scope.login = function(username, password) {
@@ -68,6 +73,7 @@ angular.module('whiteboard').controller('LoginCtrl', ['$scope', 'userService', f
 
 	$scope.logout = function() {
 		userService.logout();
+		$location.url('/loggedOut');
 	};
 
 	$scope.dismissErrorMessage = function() {
@@ -192,7 +198,8 @@ angular.module('whiteboard').controller('WhiteboardListCtrl', ['$scope', '$locat
 		} else {
 			updatedWhiteboard.accessType = 'PUBLIC';
 		}
-		whiteboardsService.update(updatedWhiteboard, function() {
+		whiteboardsService.update(updatedWhiteboard).then(function() {
+			console.log('updated whiteboard', updatedWhiteboard);
 			_.assign(whiteboard, updatedWhiteboard);
 		}, function() {
 			$scope.errorMessage = 'Konnte Öffentlichkeit nicht umschalten.';

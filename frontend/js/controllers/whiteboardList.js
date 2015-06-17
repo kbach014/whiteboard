@@ -28,7 +28,8 @@ angular.module('whiteboard').controller('WhiteboardListCtrl', ['$scope', '$locat
 		} else {
 			updatedWhiteboard.accessType = 'PUBLIC';
 		}
-		whiteboardsService.update(updatedWhiteboard, function() {
+		whiteboardsService.update(updatedWhiteboard).then(function() {
+			console.log('updated whiteboard', updatedWhiteboard);
 			_.assign(whiteboard, updatedWhiteboard);
 		}, function() {
 			$scope.errorMessage = 'Konnte Öffentlichkeit nicht umschalten.';

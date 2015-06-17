@@ -1,4 +1,4 @@
-angular.module('whiteboard').controller('LoginCtrl', ['$scope', 'userService', function($scope, userService) {
+angular.module('whiteboard').controller('LoginCtrl', ['$scope', '$location', 'userService', function($scope, $location, userService) {
 	'use strict';
 
 	$scope.login = function(username, password) {
@@ -11,6 +11,7 @@ angular.module('whiteboard').controller('LoginCtrl', ['$scope', 'userService', f
 
 	$scope.logout = function() {
 		userService.logout();
+		$location.url('/loggedOut');
 	};
 
 	$scope.dismissErrorMessage = function() {
