@@ -12,24 +12,18 @@ public class Rectangle extends Shape {
 
 	private Point p1, p2;
     
-    private Rectangle(String username, String whiteboardID) {
+    private Rectangle(String username, Long whiteboardID) {
 		super(ShapeType.RECT, username, whiteboardID);
 	}
     
-    public Rectangle(String username, String whiteboardID,  Point p1, Point p2) {
+    public Rectangle(String username, Long whiteboardID,  Point p1, Point p2) {
     	this(username, whiteboardID);
     	this.p1 = p1;
     	this.p2 = p2;
 	}
     
-    public Rectangle(String username, Long whiteboardID,  Point p1, Point p2) {
-    	this(username, String.valueOf(whiteboardID));
-    	this.p1 = p1;
-    	this.p2 = p2;
-	}
-    
     public Rectangle(User user, Whiteboard whiteboard, Point p1, Point p2) {
-    	this(user.getUsername(), String.valueOf(whiteboard.getWbid()));
+    	this(user.getUsername(), whiteboard.getWbid());
     	this.p1 = p1;
     	this.p2 = p2;
 	}

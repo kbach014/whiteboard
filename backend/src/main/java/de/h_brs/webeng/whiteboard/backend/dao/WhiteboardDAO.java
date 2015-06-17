@@ -25,7 +25,7 @@ public interface WhiteboardDAO {
 	
 	void setAccessType(Long wbid, AccessType accessType) throws WhiteboardNotFoundException;
     
-    boolean whiteboardExists(String wbid);
+    boolean whiteboardExists(Long wbid);
     
     boolean whiteboardExists(Whiteboard whiteboard);
 }

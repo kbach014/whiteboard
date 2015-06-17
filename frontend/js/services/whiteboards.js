@@ -25,6 +25,12 @@ angular.module('whiteboard').factory('whiteboardsService', ['$http', '$q', funct
 			var deferred = $q.defer();
 			$http.put('/backend/rest/whiteboards/' + whiteboard.id, whiteboard).success(deferred.resolve).error(deferred.reject);
 			return deferred.promise;
+		},
+
+		join: function(whiteboardId) {
+			var deferred = $q.defer();
+			$http.post('/backend/rest/whiteboards/' + whiteboardId + '/join', {}).success(deferred.resolve).error(deferred.reject);
+			return deferred.promise;
 		}
 
 	};

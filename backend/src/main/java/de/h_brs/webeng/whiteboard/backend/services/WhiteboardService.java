@@ -17,9 +17,12 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
+import de.h_brs.webeng.whiteboard.backend.dao.UserDAO;
 import de.h_brs.webeng.whiteboard.backend.dao.WhiteboardDAO;
 import de.h_brs.webeng.whiteboard.backend.dao.exception.UserNotFoundException;
+import de.h_brs.webeng.whiteboard.backend.dao.exception.UserWhiteboardException;
 import de.h_brs.webeng.whiteboard.backend.dao.exception.WhiteboardNotFoundException;
+import de.h_brs.webeng.whiteboard.backend.dao.impl.RedisUserDAO;
 import de.h_brs.webeng.whiteboard.backend.dao.impl.RedisWhiteboardDAO;
 import de.h_brs.webeng.whiteboard.backend.domain.Whiteboard;
 import de.h_brs.webeng.whiteboard.backend.dto.WhiteboardDto;
@@ -61,6 +64,29 @@ public class WhiteboardService {
 			return Response.noContent().build();
 		} catch (WhiteboardNotFoundException e) {
 			return Response.status(Status.NOT_FOUND).build();
+		}
+	}
+	
+	@POST
+	@Path("/{id}/join")
+	@Consumes(MediaType.APPLICATION_JSON)
+	public Response update(@PathParam("id") Long whiteboardId, @Context HttpServletRequest req) {
+		final String username = (String) req.getSession().getAttribute("username");
+		if (username == null) {
+			return Response.status(Status.UNAUTHORIZED).build();
+		}
+		
+		try {
+			final UserDAO dao = new RedisUserDAO();
+			dao.registerToWhiteboard(username, whiteboardId);
+			return Response.noContent().build();
+		} catch (WhiteboardNotFoundException e) {
+			return Response.status(Status.NOT_FOUND).build();
+		} catch (UserNotFoundException e) {
+			return Response.status(Status.UNAUTHORIZED).build();
+		} catch (UserWhiteboardException e) {
+			// treat "already registered" as success:
+			return Response.noContent().build();
 		}
 	}
 

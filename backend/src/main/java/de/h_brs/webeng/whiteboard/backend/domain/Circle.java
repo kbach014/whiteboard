@@ -14,18 +14,18 @@ public class Circle extends Shape {
 
     private int radius;
     
-    public Circle(String username, String whiteboardID) {
+    public Circle(String username, Long whiteboardID) {
     	super(ShapeType.CIRCLE, username, whiteboardID);
     }
     
-    public Circle(String username, String whiteboardID, Point coordinate, int radius) {
+    public Circle(String username, Long whiteboardID, Point coordinate, int radius) {
     	this(username, whiteboardID);    	
     	this.coordinate = coordinate;
     	this.radius = radius;
     }
     
     public Circle(User user, Whiteboard whiteboard, Point coordinate, int radius) {
-    	this(user.getUsername(), String.valueOf(whiteboard.getWbid()));    	
+    	this(user.getUsername(), whiteboard.getWbid());    	
     	this.coordinate = coordinate;
     	this.radius = radius;
     }

@@ -274,18 +274,18 @@ public class RedisWhiteboardDAO implements WhiteboardDAO {
 		}
 	}
 
-	public boolean whiteboardExists(String wbid) {
+	public boolean whiteboardExists(Long wbid) {
 		try (Jedis jedis = MyJedisPool.getPool("localhost").getResource()) {
 			return whiteboardExists(wbid, jedis);
 		}
 	}
 
 	public boolean whiteboardExists(Whiteboard whiteboard) {
-		return whiteboardExists(String.valueOf(whiteboard.getWbid()));
+		return whiteboardExists(whiteboard.getWbid());
 	}
 
-	public boolean whiteboardExists(String wbid, Jedis jedis) {
-		Map<String, String> result = jedis.hgetAll("whiteboard:"+wbid);
+	public boolean whiteboardExists(Long wbid, Jedis jedis) {
+		Map<String, String> result = jedis.hgetAll("whiteboard:"+String.valueOf(wbid));
 		
 		if(result.size() > 0)
 			return true;
@@ -294,6 +294,6 @@ public class RedisWhiteboardDAO implements WhiteboardDAO {
 	}
 
 	public boolean whiteboardExists(Whiteboard whiteboard, Jedis jedis) {
-		return whiteboardExists(String.valueOf(whiteboard.getWbid()), jedis);
+		return whiteboardExists(whiteboard.getWbid(), jedis);
 	}
 }

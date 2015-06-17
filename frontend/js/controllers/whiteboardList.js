@@ -29,7 +29,6 @@ angular.module('whiteboard').controller('WhiteboardListCtrl', ['$scope', '$locat
 			updatedWhiteboard.accessType = 'PUBLIC';
 		}
 		whiteboardsService.update(updatedWhiteboard).then(function() {
-			console.log('updated whiteboard', updatedWhiteboard);
 			_.assign(whiteboard, updatedWhiteboard);
 		}, function() {
 			$scope.errorMessage = 'Konnte Öffentlichkeit nicht umschalten.';
@@ -37,11 +36,16 @@ angular.module('whiteboard').controller('WhiteboardListCtrl', ['$scope', '$locat
 	};
 
 	$scope.open = function(whiteboardId) {
-		$location.url('/whiteboard/' + whiteboardId);
+		$location.url('/whiteboards/' + whiteboardId);
 	};
 
 	$scope.join = function(whiteboard) {
-		// TODO: whiteboardsService.join
+		whiteboardsService.join(whiteboard.id).then(function() {
+			_.remove($scope.unregisteredWhiteboards, whiteboard);
+			$scope.registeredWhiteboards.push(whiteboard);
+		}, function() {
+			$scope.errorMessage = 'Konnte Whiteboard nicht beitreten.';
+		});
 	};
 
 	$scope.dismissErrorMessage = function() {

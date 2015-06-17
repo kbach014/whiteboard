@@ -23,10 +23,10 @@ public abstract class Shape implements Serializable  {
 
     private ShapeType type;
     
-    private String wbID;
+    private Long wbID;
     
     
-    public Shape(ShapeType type, String username, String wbID) {
+    public Shape(ShapeType type, String username, Long wbID) {
     	this.uuid = UUID.randomUUID();
     	this.wbID = wbID;
     	this.shapeKey = "whiteboard:"+wbID+":shape:"+uuid;

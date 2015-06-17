@@ -25,7 +25,7 @@
       <td>{{wb.id}}</td>
       <td>{{wb.creator}}</td>
       <td>
-        <button class="btn btn-default" data-ng-class="{'active': wb.accessType == 'PUBLIC'}" data-ng-click="toggleAccessibility(wb)">
+        <button class="btn btn-default" data-ng-class="{'active': wb.accessType == 'PUBLIC'}" data-ng-click="toggleAccessibility(wb)" data-ng-show="wb.creator == currentUser.username">
           <span class="glyphicon glyphicon-ok" data-ng-show="wb.accessType == 'PUBLIC'"></span>
           <span class="glyphicon glyphicon-remove" data-ng-show="wb.accessType == 'PRIVATE'"></span>
         </button>
@@ -56,7 +56,7 @@
     <tr data-ng-repeat="wb in unregisteredWhiteboards">
       <td>{{wb.id}}</td>
       <td>{{wb.creator}}</td>
-      <td><button class="btn btn-default" data-ng-click="join(wb.id)">Beitreten</button></td>
+      <td><button class="btn btn-default" data-ng-click="join(wb)">Beitreten</button></td>
     </tr>
   </tbody>
 </table>

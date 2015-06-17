@@ -105,14 +105,14 @@ public class WhiteboardHandler extends UntypedActor {
 			if(event.getShape().getType().equals(ShapeType.RECT)) {
 				ShapeDto shapeDto = event.getShape();
 				
-				Rectangle rect = new Rectangle(event.getUsername(), String.valueOf(whiteboardId), shapeDto.getP1(), shapeDto.getP2());
+				Rectangle rect = new Rectangle(event.getUsername(), whiteboardId, shapeDto.getP1(), shapeDto.getP2());
 				ShapeDAO shapeDAO = new RedisShapeDAO(); 
 				shapeDAO.insertRect(rect);
 			}
 			else if(event.getShape().getType().equals(ShapeType.PATH)) {
 				ShapeDto shapeDto = event.getShape();
 				
-				Path path = new Path(event.getUsername(), String.valueOf(whiteboardId), shapeDto.getPoints());
+				Path path = new Path(event.getUsername(), whiteboardId, shapeDto.getPoints());
 				ShapeDAO shapeDAO = new RedisShapeDAO(); 
 				shapeDAO.insertPath(path);
 			}

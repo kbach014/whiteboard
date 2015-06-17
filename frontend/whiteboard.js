@@ -23,12 +23,12 @@ angular.module('whiteboard').config(['$routeProvider', '$httpProvider', function
 		templateUrl: 'partials/registration.html'
 	});
 
-	$routeProvider.when('/myWhiteboards', {
+	$routeProvider.when('/whiteboards', {
 		controller: 'WhiteboardListCtrl',
 		templateUrl: 'partials/whiteboardList.html'
 	});
 
-	$routeProvider.when('/whiteboard/:id', {
+	$routeProvider.when('/whiteboards/:id', {
 		controller: 'WhiteboardCtrl',
 		templateUrl: 'partials/whiteboard.html'
 	});
@@ -66,6 +66,7 @@ angular.module('whiteboard').controller('LoginCtrl', ['$scope', '$location', 'us
 	$scope.login = function(username, password) {
 		userService.login(username, password).then(function() {
 			$scope.successMessage = 'Login erfolgreich.';
+			$location.url('/whiteboards');
 		}, function() {
 			$scope.errorMessage = 'Login fehlgeschlagen.';
 		});
@@ -199,7 +200,6 @@ angular.module('whiteboard').controller('WhiteboardListCtrl', ['$scope', '$locat
 			updatedWhiteboard.accessType = 'PUBLIC';
 		}
 		whiteboardsService.update(updatedWhiteboard).then(function() {
-			console.log('updated whiteboard', updatedWhiteboard);
 			_.assign(whiteboard, updatedWhiteboard);
 		}, function() {
 			$scope.errorMessage = 'Konnte Öffentlichkeit nicht umschalten.';
@@ -207,11 +207,16 @@ angular.module('whiteboard').controller('WhiteboardListCtrl', ['$scope', '$locat
 	};
 
 	$scope.open = function(whiteboardId) {
-		$location.url('/whiteboard/' + whiteboardId);
+		$location.url('/whiteboards/' + whiteboardId);
 	};
 
 	$scope.join = function(whiteboard) {
-		// TODO: whiteboardsService.join
+		whiteboardsService.join(whiteboard.id).then(function() {
+			_.remove($scope.unregisteredWhiteboards, whiteboard);
+			$scope.registeredWhiteboards.push(whiteboard);
+		}, function() {
+			$scope.errorMessage = 'Konnte Whiteboard nicht beitreten.';
+		});
 	};
 
 	$scope.dismissErrorMessage = function() {
@@ -588,6 +593,12 @@ angular.module('whiteboard').factory('whiteboardsService', ['$http', '$q', funct
 		update: function(whiteboard) {
 			var deferred = $q.defer();
 			$http.put('/backend/rest/whiteboards/' + whiteboard.id, whiteboard).success(deferred.resolve).error(deferred.reject);
+			return deferred.promise;
+		},
+
+		join: function(whiteboardId) {
+			var deferred = $q.defer();
+			$http.post('/backend/rest/whiteboards/' + whiteboardId + '/join', {}).success(deferred.resolve).error(deferred.reject);
 			return deferred.promise;
 		}
 

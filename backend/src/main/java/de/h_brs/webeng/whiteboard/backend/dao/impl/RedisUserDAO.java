@@ -157,19 +157,19 @@ public class RedisUserDAO implements UserDAO {
 	}
 
 	@Override
-	public void registerToWhiteboard(String username, Whiteboard whiteboard) throws UserNotFoundException, WhiteboardNotFoundException, UserWhiteboardException {
+	public void registerToWhiteboard(String username, Long whiteboardId) throws UserNotFoundException, WhiteboardNotFoundException, UserWhiteboardException {
 		try (Jedis jedis = MyJedisPool.getPool("localhost").getResource()) {
 			if (!userExists(username, jedis)) {
 				throw new UserNotFoundException(username);
 			}
 
 			RedisWhiteboardDAO wbDAO = new RedisWhiteboardDAO();
-			if (!wbDAO.whiteboardExists(whiteboard, jedis)) {
+			if (!wbDAO.whiteboardExists(whiteboardId, jedis)) {
 				throw new WhiteboardNotFoundException();
 			}
 
 			// Key for Redis Set which contains all registered users for the whiteboard
-			String wbUsersKey = "whiteboard:" + whiteboard.getWbid() + ":users";
+			String wbUsersKey = "whiteboard:" + whiteboardId + ":users";
 			// Key for Redis Set which contains all whiteboards which a user is working on
 			String userWbsKey = "user:" + username + ":whiteboards";
 
@@ -177,12 +177,12 @@ public class RedisUserDAO implements UserDAO {
 			if (!jedis.sismember(wbUsersKey, username)) {
 				Transaction tx = jedis.multi();
 				tx.sadd(wbUsersKey, username);
-				tx.sadd(userWbsKey, String.valueOf(whiteboard.getWbid()));
+				tx.sadd(userWbsKey, String.valueOf(whiteboardId));
 				tx.exec();
 
 				// System.out.println(user.getUsername() + " was sucessfully registered for " + "whiteboad#" + whiteboard.getWbid());
 			} else {
-				throw new UserWhiteboardException(username, whiteboard);
+				throw new UserWhiteboardException(username, whiteboardId);
 			}
 		}
 	}

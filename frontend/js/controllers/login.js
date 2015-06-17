@@ -4,6 +4,7 @@ angular.module('whiteboard').controller('LoginCtrl', ['$scope', '$location', 'us
 	$scope.login = function(username, password) {
 		userService.login(username, password).then(function() {
 			$scope.successMessage = 'Login erfolgreich.';
+			$location.url('/whiteboards');
 		}, function() {
 			$scope.errorMessage = 'Login fehlgeschlagen.';
 		});

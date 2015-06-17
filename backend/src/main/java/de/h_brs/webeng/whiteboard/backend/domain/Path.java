@@ -16,20 +16,15 @@ public class Path extends Shape {
 	private List<Point> points; 
 	
 	public Path(User user, Whiteboard whiteboard, List<Point> points) {
-		super(ShapeType.PATH, user.getUsername(), String.valueOf(whiteboard.getWbid()));
-		
-		this.points = points;
-	}
-	
-	public Path(String username, String whiteboardID, List<Point> points) {
-		super(ShapeType.PATH, username, whiteboardID);
+		super(ShapeType.PATH, user.getUsername(), whiteboard.getWbid());
 		
 		this.points = points;
 	}
 	
 	public Path(String username, Long whiteboardID, List<Point> points) {
-		super(ShapeType.PATH, username, String.valueOf(whiteboardID));
+		super(ShapeType.PATH, username, whiteboardID);
 		
 		this.points = points;
 	}
+	
 }

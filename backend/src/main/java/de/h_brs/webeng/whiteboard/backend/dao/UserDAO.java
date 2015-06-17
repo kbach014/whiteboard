@@ -16,7 +16,7 @@ public interface UserDAO {
 
 	User login(String username, String password) throws UserNotFoundException, PasswordIncorrectException;
 
-	void registerToWhiteboard(String username, Whiteboard whiteboard) throws UserNotFoundException, WhiteboardNotFoundException, UserWhiteboardException;
+	void registerToWhiteboard(String username, Long whiteboardId) throws UserNotFoundException, WhiteboardNotFoundException, UserWhiteboardException;
 	
     List<User> findAllUsersFromWB(Whiteboard whiteboard) throws WhiteboardNotFoundException;
     
