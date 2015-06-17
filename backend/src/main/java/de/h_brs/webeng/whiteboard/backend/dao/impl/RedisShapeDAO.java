@@ -51,6 +51,7 @@ public class RedisShapeDAO implements ShapeDAO {
 				rectProperties.put(FIELD_POS_Y1, String.valueOf(rect.getP1().getY()));
 				rectProperties.put(FIELD_POS_X2, String.valueOf(rect.getP2().getX()));
 				rectProperties.put(FIELD_POS_Y2, String.valueOf(rect.getP2().getY()));
+				rectProperties.put(FIELD_CREATOR, String.valueOf(rect.getUsername()));
 
 				rectProperties.put(FIELD_SHAPE_TYPE, "r");
 
@@ -79,13 +80,14 @@ public class RedisShapeDAO implements ShapeDAO {
 					throw new WhiteboardNotFoundException();
 
 				Transaction tx = jedis.multi();
-				Map<String, String> rectProperties = new HashMap<String, String>();
-				rectProperties.put(FIELD_POS_X1, String.valueOf(circle.getCoordinate().getX()));
-				rectProperties.put(FIELD_POS_Y1, String.valueOf(circle.getCoordinate().getY()));
-				rectProperties.put(FIELD_CIRCLE_RADIUS, String.valueOf(circle.getRadius()));
-				rectProperties.put(FIELD_SHAPE_TYPE, "c");
+				Map<String, String> circleProperties = new HashMap<String, String>();
+				circleProperties.put(FIELD_POS_X1, String.valueOf(circle.getCoordinate().getX()));
+				circleProperties.put(FIELD_POS_Y1, String.valueOf(circle.getCoordinate().getY()));
+				circleProperties.put(FIELD_CIRCLE_RADIUS, String.valueOf(circle.getRadius()));
+				circleProperties.put(FIELD_SHAPE_TYPE, "c");
+				circleProperties.put(FIELD_CREATOR, String.valueOf(circle.getUsername()));
 
-				tx.hmset(circle.getShapeKey(), rectProperties);
+				tx.hmset(circle.getShapeKey(), circleProperties);
 				tx.sadd("whiteboard:" + circle.getWbID() + ":user:" + circle.getUsername() + ":shapes", circle.getUuid().toString());
 				tx.exec();
 			}
@@ -115,6 +117,7 @@ public class RedisShapeDAO implements ShapeDAO {
 
 					pathProperties.put(FIELD_PATH_POINTS, json);
 					pathProperties.put(FIELD_SHAPE_TYPE, "p");
+					pathProperties.put(FIELD_CREATOR, String.valueOf(path.getUsername()));
 					tx.hmset(path.getShapeKey(), pathProperties);
 
 					tx.sadd("whiteboard:" + path.getWbID() + ":user:" + path.getUsername() + ":shapes", path.getUuid().toString());
