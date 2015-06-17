@@ -118,7 +118,7 @@ public class WhiteboardService {
 
 		try {
 			final WhiteboardDAO whiteboardDao = new RedisWhiteboardDAO();
-			final List<Whiteboard> unregisteredWhiteboards = whiteboardDao.findRegisteredWhiteboards(username);
+			final List<Whiteboard> unregisteredWhiteboards = whiteboardDao.findUnregisteredWhiteboards(username, 0, 50);
 
 			final List<WhiteboardDto> unregisteredDtos = unregisteredWhiteboards.stream().map(wb -> {
 				WhiteboardDto dto = new WhiteboardDto();

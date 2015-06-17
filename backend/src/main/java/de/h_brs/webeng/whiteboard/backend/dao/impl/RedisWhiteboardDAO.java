@@ -247,7 +247,7 @@ public class RedisWhiteboardDAO implements WhiteboardDAO {
 	@Override
 	public void setAccessType(Long wbid, AccessType accessType) throws WhiteboardNotFoundException {
 		try (Jedis jedis = MyJedisPool.getPool("localhost").getResource()) {
-			String accessTypeOld = jedis.hget("whiteboard:wbid", FIELD_ACCESS_TYPE);
+			String accessTypeOld = jedis.hget("whiteboard:"+wbid, FIELD_ACCESS_TYPE);
 			String wbidS = String.valueOf(wbid);
 			
 			if(accessTypeOld == null || accessTypeOld.equals("")) {
@@ -262,12 +262,12 @@ public class RedisWhiteboardDAO implements WhiteboardDAO {
 				if(accessTypeOld.equals(ACCESS_PUBLIC))
 					return;
 				tx.sadd("whiteboards:"+ACCESS_PUBLIC, wbidS);
-				tx.hset("whiteboard:wbid", FIELD_ACCESS_TYPE, ACCESS_PUBLIC);
+				tx.hset("whiteboard:"+wbidS, FIELD_ACCESS_TYPE, ACCESS_PUBLIC);
 			} else if(accessType.equals(AccessType.PRIVATE)) {
 				if(accessTypeOld.equals(ACCESS_PRIVATE))
 					return;
 				tx.sadd("whiteboards:"+ACCESS_PRIVATE, wbidS);
-				tx.hset("whiteboard:wbid", FIELD_ACCESS_TYPE, ACCESS_PRIVATE);
+				tx.hset("whiteboard:"+wbidS, FIELD_ACCESS_TYPE, ACCESS_PRIVATE);
 			}
 			
 			tx.exec();
