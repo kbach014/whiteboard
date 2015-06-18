@@ -12,15 +12,14 @@ import javax.servlet.annotation.WebFilter;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import de.h_brs.webeng.whiteboard.backend.dao.UserDAO;
+import de.h_brs.webeng.whiteboard.backend.dao.impl.RedisUserDAO;
 
-import de.h_brs.webeng.whiteboard.backend.DrawingEndpoint;
+@WebFilter(filterName = "authFilter", urlPatterns = { "/rest/whiteboards/*" })
+public final class AuthFilter implements Filter {
 
-@WebFilter(filterName = "authFilter", urlPatterns = {"/rest/whiteboards/*"})
-public final class AuthFilter implements Filter{
-	private static final Logger LOG = LoggerFactory.getLogger(DrawingEndpoint.class);
-	
+	private final UserDAO userDAO = new RedisUserDAO();
+
 	@Override
 	public void init(FilterConfig filterConfig) throws ServletException {
 		// noop
@@ -34,11 +33,14 @@ public final class AuthFilter implements Filter{
 			chain.doFilter(request, response);
 		}
 	}
-	
-	private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) 
-			throws IOException, ServletException 
-	{
-		chain.doFilter(request, response);
+
+	private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException {
+		final String username = (String) request.getSession().getAttribute("username");
+		if (username == null) {
+			response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+		} else if (userDAO.userExists(username)) {
+			chain.doFilter(request, response);
+		}
 	}
 
 	@Override
