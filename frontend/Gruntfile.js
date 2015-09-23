@@ -90,7 +90,7 @@ module.exports = function(grunt) {
 
 		copy: {
 			html: {
-				src: ['index.html', 'partials/**', 'whiteboard.css', 'whiteboard.js', 'whiteboard.min.js'],
+				src: ['index.html', 'partials/**', 'whiteboard.css', 'whiteboard.js', 'whiteboard.min.js', 'lib/**', 'fonts/**'],
 				dest: '../backend/src/main/webapp/',
 			}
 		}
